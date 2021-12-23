@@ -124,5 +124,58 @@ export const SPL_TOKEN_INSTRUCTIONS = {
         )
       },
     },
+    8: {
+      name: 'Token: Burn',
+      accounts: [
+        { name: 'Source', important: true },
+        { name: 'Mint', important: true },
+        { name: 'Authority' },
+      ],
+      getDataUI: async (
+        connection: Connection,
+        data: Uint8Array,
+        accounts: AccountMetaData[]
+      ) => {
+        const tokenAccount = await tryGetTokenAccount(
+          connection,
+          accounts[0].pubkey
+        )
+        const tokenMint = await tryGetMint(
+          connection,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          tokenAccount!.account.mint
+        )
+
+        const tokenMintDescriptor = getMintMetadata(tokenAccount?.account.mint)
+
+        // TokenBurn instruction layout
+        // TODO: Use BufferLayout to decode the instruction
+        // const dataLayout = BufferLayout.struct([
+        //     BufferLayout.u8('instruction'),
+        //     Layout.uint64('amount'),
+        //   ]);
+        const rawAmount = new BN(data.slice(1), 'le')
+        const tokenAmount = tokenMint
+          ? getMintDecimalAmountFromNatural(tokenMint.account, rawAmount)
+          : rawAmount
+
+        return (
+          <>
+            {tokenMint ? (
+              <div>
+                <div>
+                  <span>Amount:</span>
+                  <span>{`${tokenAmount.toNumber().toLocaleString()} ${
+                    tokenMintDescriptor?.name ?? ''
+                  }`}</span>
+                </div>
+              </div>
+            ) : (
+              <div>{JSON.stringify(data)}</div>
+            )}
+          </>
+        )
+      },
+    },
   },
 }
