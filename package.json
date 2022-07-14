@@ -73,7 +73,7 @@
     "bignumber.js": "^9.0.2",
     "buffer-layout": "^1.2.2",
     "classnames": "^2.3.1",
-    "d3": "^7.4.4",
+    "d3": "^7.6.1",
     "dayjs": "^1.11.1",
     "fp-ts": "^2.12.1",
     "goblingold-sdk": "^1.2.35",
