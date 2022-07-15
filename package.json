@@ -43,7 +43,7 @@
     "@marinade.finance/marinade-ts-sdk": "^2.0.9",
     "@metaplex-foundation/mpl-token-metadata": "^1.2.5",
     "@mithraic-labs/serum-remote": "^0.0.1-rc.16",
-    "@next/bundle-analyzer": "^12.1.5",
+    "@next/bundle-analyzer": "^12.2.2",
     "@nfteyez/sol-rayz": "^0.10.2",
     "@nivo/bar": "^0.79.1",
     "@nivo/core": "^0.79.0",
