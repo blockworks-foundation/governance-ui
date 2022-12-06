@@ -23,10 +23,15 @@ solana account -o $output_path/GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw/acco
 
 # find token accounts & mints to download through parsing all governances of the realm
 export OUT=$output_path
+export GOV_PROGRAM_ID=GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw
+export REALM_ID=Eb69t8zTkNbBViLRykbgBofr8PbwvZoAX4KicVcNNwkj
+yarn ts-node scripts/governance-dump.ts || exit
+
 export GOV_PROGRAM_ID=GqTPL6qRf5aUuqscLh8Rg2HTxPUXfhhAXDptTLhp1t2J
 export VSR_PROGRAM_ID=4Q6WW2ouZ6V3iaNm56MTd5n2tnTm4C5fiH8miFHnAFHo
 export REALM_ID=DPiH3H3c7t47BMxqTxLsuPQpEC6Kne8GA9VXbxpnZxFE
 yarn ts-node scripts/governance-dump.ts || exit
+
 
 # launch a local validator
 solana-test-validator --reset \

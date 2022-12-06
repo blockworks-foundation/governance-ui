@@ -53,6 +53,12 @@ const gmaLimit = Number(GMA_LIMIT || 100)
 
 const outDir = OUT || 'out'
 
+console.log('GOV_PROGRAM_ID: ', gov.toString())
+console.log('VSR_PROGRAM_ID: ', vsr.toString())
+console.log('REALM_ID: ', realm.toString())
+console.log('GMA_LIMIT: ', gmaLimit.toString())
+console.log('OUT: ', outDir.toString())
+
 function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true })
@@ -231,7 +237,7 @@ async function main() {
 
     const after = ai!.data.toString('hex')
     console.log(
-      `${pubkey.toString()} type:${account.accountType} len:${
+      `pk:${pubkey.toString()} type:${account.accountType} len:${
         (after.length - before.length) / 2
       } data:`
     )
