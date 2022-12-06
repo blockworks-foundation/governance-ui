@@ -3,7 +3,8 @@ import { clusterApiUrl, Connection } from '@solana/web3.js';
 import { createContext, useState } from 'react';
 
 const DEVNET_RPC_ENDPOINT =
-  process.env.DEVNET_RPC || 'https://api.dao.devnet.solana.com/';
+  process.env.DEVNET_RPC ||
+  'https://realms-develope-935c.devnet.rpcpool.com/67f608dc-a353-4191-9c34-293a5061b536/';
 const MAINNET_RPC_ENDPOINT =
   process.env.MAINNET_RPC ||
   'http://realms-realms-c335.mainnet.rpcpool.com/258d3727-bb96-409d-abea-0b1b4c48af29/';
