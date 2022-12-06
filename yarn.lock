@@ -393,10 +393,10 @@
     big.js "^6.1.1"
     bs58 "^5.0.0"
 
-"@blockworks-foundation/mangolana@0.0.1-beta.8":
-  version "0.0.1-beta.8"
-  resolved "https://registry.yarnpkg.com/@blockworks-foundation/mangolana/-/mangolana-0.0.1-beta.8.tgz#9c70df1c0f9b37bd0bdd528749085633859c9376"
-  integrity sha512-2c4nI4zbNnLGkNvajaanogdar/r5OfMkFrwGaGq4y3UVO1OJ8WAwKm2TkhQwhU6xWghpyRGYfcFMDVtbe4iNcQ==
+"@blockworks-foundation/mangolana@0.0.1-beta.11":
+  version "0.0.1-beta.11"
+  resolved "https://registry.yarnpkg.com/@blockworks-foundation/mangolana/-/mangolana-0.0.1-beta.11.tgz#0ecd10bde701fb852614df8a90a1c883af0c28da"
+  integrity sha512-Pf4FNOc0yFbYdDprs8mic1H3Cn7u1wmZO57vcy1o90C1OsuaGX0JUZuTm/NTcBWSBYfmBQtqUAOZE9d34Xe6qA==
   dependencies:
     "@solana/web3.js" "^1.63.1"
     bs58 "^5.0.0"
@@ -8546,12 +8546,12 @@ diff-sequences@^29.3.1:
   resolved "https://registry.yarnpkg.com/diff-sequences/-/diff-sequences-29.3.1.tgz#104b5b95fe725932421a9c6e5b4bef84c3f2249e"
   integrity sha512-hlM3QR272NXCi4pq+N4Kok4kOp6EsgOM3ZSpJI7Da3UAs+Ttsi8MRmB6trM/lhyzUxGfOgnpkHtgqm5Q/CTcfQ==
 
-diff@5.0.0, diff@^5.0.0:
+diff@5.0.0:
   version "5.0.0"
   resolved "https://registry.yarnpkg.com/diff/-/diff-5.0.0.tgz#7ed6ad76d859d030787ec35855f5b1daf31d852b"
   integrity sha512-/VTCrvm5Z0JGty/BWHljh+BAiw3IK+2j87NGMu8Nwc/f48WoDAC395uomO9ZD117ZOBaHmkX1oyLvkVM/aIT3w==
 
-diff@5.1.0:
+diff@5.1.0, diff@^5.0.0:
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/diff/-/diff-5.1.0.tgz#bc52d298c5ea8df9194800224445ed43ffc87e40"
   integrity sha512-D+mk+qE8VC/PAUrlAU34N+VfXev0ghe5ywmpqrawphmVZc1bEfn56uo9qpyGp1p4xpzOHkSW4ztBd6L7Xx4ACw==
