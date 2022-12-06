@@ -4,15 +4,16 @@ import { BinaryWriter, serialize } from 'borsh'
 import chalk from 'chalk'
 import { AccountInfo, Connection, PublicKey } from '@solana/web3.js'
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
-import * as anchor from '@project-serum/anchor'
 import {
-  Governance,
   getGovernanceAccounts,
   getGovernanceSchemaForAccount,
   getRealm,
+  Governance,
   pubkeyFilter,
-  VoteThresholdPercentage,
-} from 'spl-governanceV2'
+  VoteThreshold,
+  VoteThresholdType,
+} from '@solana/spl-governance'
+import * as anchor from '@project-serum/anchor'
 
 import { VsrClient } from 'VoteStakeRegistry/sdk/client'
 import { getAccountsForGovernances } from './governanceAccounts'
@@ -122,6 +123,23 @@ function serializeAccount(pubkey: PublicKey, ai: AccountInfo<Buffer>): string {
   const writer = (this as unknown) as BinaryWriter
   writer.writeFixedArray(value.toBuffer())
 }
+;(BinaryWriter.prototype as any).writeVoteThreshold = function (
+  value: VoteThreshold
+) {
+  const writer = (this as unknown) as BinaryWriter
+  writer.maybeResize()
+  writer.buf.writeUInt8(value.type, writer.length)
+  writer.length += 1
+
+  // Write value for VoteThresholds with u8 value
+  if (
+    value.type === VoteThresholdType.YesVotePercentage ||
+    value.type === VoteThresholdType.QuorumPercentage
+  ) {
+    writer.buf.writeUInt8(value.value!, writer.length)
+    writer.length += 1
+  }
+}
 
 async function main() {
   const client = await VsrClient.connect(
@@ -202,7 +220,8 @@ async function main() {
     const before = ai!.data.toString('hex')
 
     // override any governance settings to improve testing as you whish
-    account.config.voteThresholdPercentage = new VoteThresholdPercentage({
+    account.config.communityVoteThreshold = new VoteThreshold({
+      type: VoteThresholdType.YesVotePercentage,
       value: 0,
     })
     account.config.maxVotingTime = 300 // in seconds = 5 minutes
