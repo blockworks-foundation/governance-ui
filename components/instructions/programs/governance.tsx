@@ -241,7 +241,7 @@ export const GOVERNANCE_INSTRUCTIONS = {
           tryGetRealmConfig(connection, realm.owner, realm.pubkey),
           dryRunInstruction(connection, walletMoq, instructionMoq),
         ])
-        console.log(simulationResults, 'realm config simulation')
+
         const args = deserializeBorsh(
           getGovernanceInstructionSchema(programVersion),
           SetRealmConfigArgs,
