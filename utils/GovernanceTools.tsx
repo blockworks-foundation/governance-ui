@@ -79,6 +79,8 @@ export function getGovernanceConfig(
     councilVoteThreshold: councilVoteThreshold,
     councilVetoVoteThreshold: councilVetoVoteThreshold,
     communityVetoVoteThreshold: communityVetoVoteThreshold,
+    votingCoolOffTime: 0, // TODO: Expose in the form
+    depositExemptProposalCount: 10,
   })
 }
 
