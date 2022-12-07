@@ -22,6 +22,8 @@ export interface BaseGovernanceFormFields {
   maxVotingTime: number
   voteThreshold: number
   voteTipping: VoteTipping
+  depositExemptProposalCount: number
+  votingCoolOffTime: number
 }
 
 const BaseGovernanceForm = ({ formErrors, form, setForm, setFormErrors }) => {
@@ -177,6 +179,37 @@ const BaseGovernanceForm = ({ formErrors, form, setForm, setFormErrors }) => {
           })
         }
         error={formErrors['maxVotingTime']}
+      />
+      <Input
+        label="votingCoolOffTime"
+        value={form.votingCoolOffTime}
+        name="votingCoolOffTime"
+        type="number"
+        min={0}
+        onBlur={validateMinMax}
+        onChange={(evt) =>
+          handleSetForm({
+            value: evt.target.value,
+            propertyName: 'votingCoolOffTime',
+          })
+        }
+        error={formErrors['votingCoolOffTime']}
+      />
+      <Input
+        label="depositExemptProposalCount"
+        value={form.depositExemptProposalCount}
+        name="depositExemptProposalCount"
+        type="number"
+        min={0}
+        max={254}
+        onBlur={validateMinMax}
+        onChange={(evt) =>
+          handleSetForm({
+            value: evt.target.value,
+            propertyName: 'depositExemptProposalCount',
+          })
+        }
+        error={formErrors['depositExemptProposalCount']}
       />
       <Input
         label="Yes vote threshold (%)"

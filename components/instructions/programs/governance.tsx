@@ -111,6 +111,13 @@ export const GOVERNANCE_INSTRUCTIONS = {
               )} days(s)`}
               </p>
               <p>
+                {`votingCoolOffTime:
+              ${governance.account.config.votingCoolOffTime}`}
+              </p>
+              <p>
+                {`depositExemptProposalCount ${governance.account.config.depositExemptProposalCount}`}
+              </p>
+              <p>
                 {`voteTipping:
               ${VoteTipping[governance.account.config.communityVoteTipping]}`}
               </p>
@@ -149,6 +156,13 @@ export const GOVERNANCE_INSTRUCTIONS = {
               <p>
                 {`maxVotingTime:
               ${getDaysFromTimestamp(args.config.maxVotingTime)} days(s)`}
+              </p>
+              <p>
+                {`votingCoolOffTime:
+              ${args.config.votingCoolOffTime}`}
+              </p>
+              <p>
+                {`depositExemptProposalCount ${args.config.depositExemptProposalCount}`}
               </p>
               <p>
                 {`voteTipping:

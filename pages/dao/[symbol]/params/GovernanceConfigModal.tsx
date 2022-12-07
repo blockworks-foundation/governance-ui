@@ -70,6 +70,8 @@ const GovernanceConfigModal = ({
     minInstructionHoldUpTime: getDaysFromTimestamp(
       config?.minInstructionHoldUpTime
     ),
+    depositExemptProposalCount: config?.depositExemptProposalCount,
+    votingCoolOffTime: config.votingCoolOffTime,
     maxVotingTime: getDaysFromTimestamp(config?.maxVotingTime),
     voteThreshold: config?.communityVoteThreshold.value!,
     voteTipping: config?.communityVoteTipping,
@@ -91,6 +93,8 @@ const GovernanceConfigModal = ({
         voteThresholdPercentage: form!.voteThreshold,
         mintDecimals: mint!.decimals,
         voteTipping: form.voteTipping,
+        depositExemptProposalCount: form.depositExemptProposalCount,
+        votingCoolOffTime: form.votingCoolOffTime,
       }
       const governanceConfig = getGovernanceConfig(
         realmInfo?.programVersion!,

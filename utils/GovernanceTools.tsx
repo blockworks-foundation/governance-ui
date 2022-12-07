@@ -27,6 +27,8 @@ export interface GovernanceConfigValues {
   voteThresholdPercentage: number
   mintDecimals: number
   voteTipping?: VoteTipping
+  votingCoolOffTime: number
+  depositExemptProposalCount: number
 }
 
 // Parses min tokens to create (proposal or governance)
@@ -66,6 +68,8 @@ export function getGovernanceConfig(
     minCommunityTokensToCreateProposal: new BN(
       minTokensToCreateProposal.toString()
     ),
+    votingCoolOffTime: values.votingCoolOffTime,
+    depositExemptProposalCount: values.depositExemptProposalCount,
     minInstructionHoldUpTime: getTimestampFromDays(
       values.minInstructionHoldUpTime
     ),

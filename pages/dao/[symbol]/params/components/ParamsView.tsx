@@ -65,12 +65,17 @@ const ParamsView = ({ activeGovernance, openGovernanceProposalModal }) => {
             padding
             val={activeGovernance.account.config.minInstructionHoldUpTime}
           />
-          {/* NOT NEEDED RIGHT NOW */}
-          {/* <AddressField
-          label="Proposal Cool-off Time"
-          padding
-          val={activeGovernance.account.config.proposalCoolOffTime}
-          /> */}
+          {console.log(activeGovernance)}
+          <AddressField
+            label="Proposal Cool-off Time"
+            padding
+            val={activeGovernance.account.config.votingCoolOffTime}
+          />
+          <AddressField
+            label="Deposit Exempt Proposal Count"
+            padding
+            val={activeGovernance.account.config.depositExemptProposalCount}
+          />
           <AddressField
             label="Vote Threshold Percentage"
             padding

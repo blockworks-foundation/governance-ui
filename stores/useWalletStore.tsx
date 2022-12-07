@@ -368,7 +368,7 @@ const useWalletStore = create<WalletStore>((set, get) => ({
         ),
         getRealmConfigAccountOrDefault(connection, programId, realmId),
       ])
-
+      console.log(governances)
       const governancesMap = accountsToPubkeyMap(governances)
 
       set((s) => {
@@ -415,6 +415,7 @@ const useWalletStore = create<WalletStore>((set, get) => ({
         Governance,
         [pubkeyFilter(1, realmId)!]
       )
+      console.log(governances)
       const proposalsByGovernance = await getProposals(
         governances.map((x) => x.pubkey),
         connectionContext,
