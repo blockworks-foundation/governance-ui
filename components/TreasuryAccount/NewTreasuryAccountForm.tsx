@@ -44,6 +44,8 @@ const defaultFormValues = {
   maxVotingTime: 3,
   voteThreshold: 60,
   voteTipping: VoteTipping.Strict,
+  depositExemptProposalCount: 10,
+  votingCoolOffTime: 0,
 }
 
 const SOL = 'SOL'
@@ -155,6 +157,8 @@ const NewAccountForm = () => {
           voteThresholdPercentage: form.voteThreshold,
           mintDecimals: realmMint.decimals,
           voteTipping: form.voteTipping,
+          votingCoolOffTime: form.votingCoolOffTime,
+          depositExemptProposalCount: form.depositExemptProposalCount,
         }
 
         const governanceConfig = getGovernanceConfig(

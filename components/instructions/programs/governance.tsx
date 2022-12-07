@@ -230,7 +230,6 @@ export const GOVERNANCE_INSTRUCTIONS = {
           accounts: accounts,
           data: data,
         })
-
         const [
           programVersion,
           communityMint,
@@ -272,6 +271,7 @@ export const GOVERNANCE_INSTRUCTIONS = {
         const proposedPluginPk = parsedRealmConfig?.account?.communityTokenConfig?.voterWeightAddin?.toBase58()
         const proposedMaxVoterWeightPk = parsedRealmConfig?.account?.communityTokenConfig?.maxVoterWeightAddin?.toBase58()
         isLoading = false
+        console.log(parsedRealmConfig)
         return isLoading ? (
           <Loading></Loading>
         ) : (
@@ -357,11 +357,18 @@ export const GOVERNANCE_INSTRUCTIONS = {
               </p>
               <p>
                 {`useCommunityVoterWeightAddin:
-               ${!!args.configArgs.useCommunityVoterWeightAddin}`}
+               ${
+                 !!args.configArgs.useCommunityVoterWeightAddin ||
+                 !!args.configArgs.communityTokenConfigArgs.useVoterWeightAddin
+               }`}
               </p>
               <p>
                 {`useMaxCommunityVoterWeightAddin:
-               ${!!args.configArgs.useMaxCommunityVoterWeightAddin}`}
+               ${
+                 !!args.configArgs.useMaxCommunityVoterWeightAddin ||
+                 !!args.configArgs.communityTokenConfigArgs
+                   .useMaxVoterWeightAddin
+               }`}
               </p>
               <p>
                 {proposedPluginPk && (
