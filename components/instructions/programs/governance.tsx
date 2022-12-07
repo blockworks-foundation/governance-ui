@@ -271,7 +271,7 @@ export const GOVERNANCE_INSTRUCTIONS = {
         const proposedPluginPk = parsedRealmConfig?.account?.communityTokenConfig?.voterWeightAddin?.toBase58()
         const proposedMaxVoterWeightPk = parsedRealmConfig?.account?.communityTokenConfig?.maxVoterWeightAddin?.toBase58()
         isLoading = false
-        console.log(parsedRealmConfig)
+
         return isLoading ? (
           <Loading></Loading>
         ) : (
