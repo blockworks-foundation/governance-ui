@@ -213,6 +213,7 @@ const getDepositsAdditionalInfoEvents = async (
   //because we switch wallet in here we can't use rpc from npm module
   //anchor dont allow to switch wallets inside existing client
   //parse events response as anchor do
+
   const events: any[] = []
   const parser = new EventParser(client.program.programId, client.program.coder)
   const maxRange = 8

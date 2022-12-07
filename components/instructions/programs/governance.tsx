@@ -226,7 +226,7 @@ export const GOVERNANCE_INSTRUCTIONS = {
           publicKey: walletPk,
         }
         const instructionMoq = new InstructionData({
-          programId: new PublicKey(governanceProgramId),
+          programId: realm.owner,
           accounts: accounts,
           data: data,
         })
@@ -249,7 +249,7 @@ export const GOVERNANCE_INSTRUCTIONS = {
         ) as SetRealmConfigArgs
 
         const possibleRealmConfigsAccounts = simulationResults.response.accounts?.filter(
-          (x) => x?.owner === governanceProgramId
+          (x) => x?.owner === realm.owner.toBase58()
         )
         let parsedRealmConfig: null | ProgramAccount<RealmConfigAccount> = null
         if (possibleRealmConfigsAccounts) {
@@ -260,7 +260,7 @@ export const GOVERNANCE_INSTRUCTIONS = {
                 //moq for accountInfo
                 {
                   data: Buffer.from(acc!.data[0], 'base64'),
-                  owner: new PublicKey(governanceProgramId),
+                  owner: realm.owner,
                 } as any
               )
               parsedRealmConfig = account as ProgramAccount<RealmConfigAccount>
