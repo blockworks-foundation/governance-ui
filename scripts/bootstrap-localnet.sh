@@ -16,6 +16,10 @@ do
  mkdir -p $output_path/$program_id/accounts
  solana program dump-executable $program_id $output_path/$program_id/program.so
  solana program dump-owned-accounts $program_id $output_path/$program_id/accounts
+ # manually fetch accounts so programs are upgradeable
+ solana account -o $output_path/$program_id/accounts/$program_id.json --output json $program_id
+ buffer_id=$(solana program show GqTPL6qRf5aUuqscLh8Rg2HTxPUXfhhAXDptTLhp1t2J --output json | jq -r '.programdataAddress')
+ solana account -o $output_path/$program_id/accounts/$buffer_id.json --output json $buffer_id
 done
 
 # save wallet used for simulation of VSR accounts
@@ -35,9 +39,6 @@ yarn ts-node scripts/governance-dump.ts || exit
 
 # launch a local validator
 solana-test-validator --reset \
-  --bpf-program GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw $output_path/GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw/program.so \
-  --bpf-program GqTPL6qRf5aUuqscLh8Rg2HTxPUXfhhAXDptTLhp1t2J $output_path/GqTPL6qRf5aUuqscLh8Rg2HTxPUXfhhAXDptTLhp1t2J/program.so \
-  --bpf-program 4Q6WW2ouZ6V3iaNm56MTd5n2tnTm4C5fiH8miFHnAFHo $output_path/4Q6WW2ouZ6V3iaNm56MTd5n2tnTm4C5fiH8miFHnAFHo/program.so \
   --account-dir $output_path/GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw/accounts \
   --account-dir $output_path/GqTPL6qRf5aUuqscLh8Rg2HTxPUXfhhAXDptTLhp1t2J/accounts \
   --account-dir $output_path/4Q6WW2ouZ6V3iaNm56MTd5n2tnTm4C5fiH8miFHnAFHo/accounts
