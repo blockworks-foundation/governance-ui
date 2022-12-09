@@ -18,7 +18,7 @@ do
  solana program dump-owned-accounts $program_id $output_path/$program_id/accounts
  # manually fetch accounts so programs are upgradeable
  solana account -o $output_path/$program_id/accounts/$program_id.json --output json $program_id
- buffer_id=$(solana program show GqTPL6qRf5aUuqscLh8Rg2HTxPUXfhhAXDptTLhp1t2J --output json | jq -r '.programdataAddress')
+ buffer_id=$(solana program show $program_id --output json | jq -r '.programdataAddress')
  solana account -o $output_path/$program_id/accounts/$buffer_id.json --output json $buffer_id
 done
 
