@@ -68,8 +68,8 @@ export function getGovernanceConfig(
     minCommunityTokensToCreateProposal: new BN(
       minTokensToCreateProposal.toString()
     ),
-    votingCoolOffTime: values.votingCoolOffTime,
-    depositExemptProposalCount: values.depositExemptProposalCount,
+    votingCoolOffTime: values.votingCoolOffTime || 0,
+    depositExemptProposalCount: values.depositExemptProposalCount || 10,
     minInstructionHoldUpTime: getTimestampFromDays(
       values.minInstructionHoldUpTime
     ),
@@ -83,8 +83,6 @@ export function getGovernanceConfig(
     councilVoteThreshold: councilVoteThreshold,
     councilVetoVoteThreshold: councilVetoVoteThreshold,
     communityVetoVoteThreshold: communityVetoVoteThreshold,
-    votingCoolOffTime: 0, // TODO: Expose in the form
-    depositExemptProposalCount: 10,
   })
 }
 
