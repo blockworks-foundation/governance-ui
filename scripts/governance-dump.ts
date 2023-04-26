@@ -31,7 +31,9 @@ const {
 // anchor needs this to be set, as we don't have an Anchor.toml setup
 process.env.ANCHOR_WALLET ||= `${process.env.HOME}/.config/solana/id.json`
 
-const conn = new Connection(RPC_URL || 'https://api.mainnet-beta.solana.com/')
+const conn = new Connection(
+  RPC_URL || 'https://mango.rpcpool.com/81b6541958ce2ce8e4186e3c7aba/'
+)
 
 const connectionContext: ConnectionContext = {
   cluster: 'mainnet',
@@ -53,6 +55,7 @@ const gmaLimit = Number(GMA_LIMIT || 100)
 
 const outDir = OUT || 'out'
 
+console.log(connectionContext.endpoint)
 console.log('GOV_PROGRAM_ID: ', gov.toString())
 console.log('VSR_PROGRAM_ID: ', vsr.toString())
 console.log('REALM_ID: ', realm.toString())
@@ -258,6 +261,10 @@ async function main() {
     }
 
     process.stdout.write('\n')
+
+    if (before.length !== after.length) {
+      throw 'Invalid governance transformation'
+    }
   }
   const assetAccounts = await getAccountsForGovernances(
     connectionContext,

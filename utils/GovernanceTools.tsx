@@ -69,7 +69,7 @@ export function getGovernanceConfig(
       minTokensToCreateProposal.toString()
     ),
     votingCoolOffTime: values.votingCoolOffTime || 0,
-    depositExemptProposalCount: values.depositExemptProposalCount || 10,
+    depositExemptProposalCount: values.depositExemptProposalCount,
     minInstructionHoldUpTime: getTimestampFromDays(
       values.minInstructionHoldUpTime
     ),

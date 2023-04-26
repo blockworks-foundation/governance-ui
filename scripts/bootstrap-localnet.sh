@@ -24,6 +24,8 @@ done
 
 # save wallet used for simulation of VSR accounts
 solana account -o $output_path/GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw/accounts/ENmcpFCpxN1CqyUjuog9yyUVfdXBKF3LVCwLr7grJZpk.json --output json ENmcpFCpxN1CqyUjuog9yyUVfdXBKF3LVCwLr7grJZpk
+solana account -o $output_path/GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw/accounts/8pueehTroUBwL1EQAkjr2DNa2HEoRwQpiUF1s8F7duzd.json --output json 8pueehTroUBwL1EQAkjr2DNa2HEoRwQpiUF1s8F7duzd
+
 
 # find token accounts & mints to download through parsing all governances of the realm
 export OUT=$output_path
