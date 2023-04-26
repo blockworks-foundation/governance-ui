@@ -4058,10 +4058,10 @@
     "@project-serum/anchor" "^0.25.0"
     "@project-serum/serum" "^0.13.61"
 
-"@solana/spl-governance@0.3.15", "@solana/spl-governance@0.3.17", "@solana/spl-governance@^0.0.29", "@solana/spl-governance@^0.0.34":
-  version "0.3.17"
-  resolved "https://registry.yarnpkg.com/@solana/spl-governance/-/spl-governance-0.3.17.tgz#ec6fc9c3e3c2eb5de0c00ebc8c4d46f6e5a899e9"
-  integrity sha512-GdKBb9Hwzsu6X3Kn1SwKUuuo4cGG9cUCnlSE0JXeGOriFEVcQf3rcuUIOU7JbKcN1vIMyDyayE8p632EOgFprw==
+"@solana/spl-governance@0.3.15", "@solana/spl-governance@0.3.27", "@solana/spl-governance@^0.0.29", "@solana/spl-governance@^0.0.34":
+  version "0.3.27"
+  resolved "https://registry.yarnpkg.com/@solana/spl-governance/-/spl-governance-0.3.27.tgz#54ab8310a142b3d581d8abc3df37e3511f02619c"
+  integrity sha512-5qAgaOWXNNbfOAiBeX5GqX+ZahMGzm1s/kLADAVRWtPYI/vpwc8ENI5jpPOEWG5bgTnnBP+wLT9mgxgwoS4e+A==
   dependencies:
     "@solana/web3.js" "^1.22.0"
     axios "^1.1.3"

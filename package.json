@@ -24,6 +24,7 @@
     ]
   },
   "dependencies": {
+    "@solana/spl-governance": "0.3.27",
     "@blockworks-foundation/mango-client": "3.6.14",
     "@blockworks-foundation/mango-v3-reimbursement-lib": "1.0.8",
     "@blockworks-foundation/mango-v4": "0.0.2",
@@ -202,7 +203,7 @@
     "port-sdk/@saberhq/token-utils": "1.12.53",
     "@solana/web3.js": "1.66.2",
     "react": "18.2.0",
-    "@solana/spl-governance": "0.3.17",
+    "@solana/spl-governance": "0.3.27",
     "@solana/spl-token-registry": "0.2.3775",
     "@solana/wallet-adapter-base": "0.9.5",
     "@solana/buffer-layout": "4.0.0",

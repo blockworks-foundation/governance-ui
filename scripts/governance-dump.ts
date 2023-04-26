@@ -233,7 +233,7 @@ async function main() {
       type: VoteThresholdType.YesVotePercentage,
       value: 0,
     })
-    account.config.maxVotingTime = 300 // in seconds = 5 minutes
+    account.config.baseVotingTime = 300 // in seconds = 5 minutes
 
     ai!.data = Buffer.from(serialize(schema, account))
     fs.writeFileSync(path, serializeAccount(pubkey, ai!))
