@@ -3,7 +3,7 @@ import { AccountType, AssetAccount } from '@utils/uiTypes/assets'
 import { Instructions, PackageEnum } from '@utils/uiTypes/proposalCreationTypes'
 import useGovernanceAssetsStore from 'stores/useGovernanceAssetsStore'
 import useRealm from './useRealm'
-import { vsrPluginsPks } from './useVotingPlugins'
+import { heliumVsrPluginsPks, vsrPluginsPks } from './useVotingPlugins'
 
 type Package = {
   name: string
@@ -23,6 +23,7 @@ type Instruction = {
   name: string
   isVisible?: boolean
   packageId: PackageEnum
+  assetType?: 'token' | 'mint' | 'wallet'
 }
 
 type InstructionsMap = {
@@ -65,33 +66,21 @@ export default function useGovernanceAssets() {
     return governancesFiltered
   }
 
-  function canUseGovernanceForInstruction(types: GovernanceAccountType[]) {
+  function canUseGovernanceForInstruction(types: AccountType[]) {
     return (
       realm &&
-      getGovernancesByAccountTypes(types).some((govAcc) =>
-        ownVoterWeight.canCreateProposal(govAcc.account.config)
-      )
+      assetAccounts
+        .filter((x) => types.find((t) => t === x.type))
+        .some((govAcc) =>
+          ownVoterWeight.canCreateProposal(govAcc.governance.account.config)
+        )
     )
   }
-  const canMintRealmCommunityToken = () => {
-    const governances = getGovernancesByAccountTypes([
-      GovernanceAccountType.MintGovernanceV1,
-      GovernanceAccountType.MintGovernanceV2,
-    ])
-    return !!governances.find((govAcc) =>
-      realm?.account.communityMint.equals(govAcc.account.governedAccount)
-    )
-  }
-  const canMintRealmCouncilToken = () => {
-    const governances = getGovernancesByAccountTypes([
-      GovernanceAccountType.MintGovernanceV1,
-      GovernanceAccountType.MintGovernanceV2,
-    ])
 
-    return !!governances.find(
+  const canMintRealmCouncilToken = () => {
+    return !!assetAccounts.find(
       (x) =>
-        x.account.governedAccount.toBase58() ==
-        realm?.account.config.councilMint?.toBase58()
+        x.pubkey.toBase58() == realm?.account.config.councilMint?.toBase58()
     )
   }
   const canUseTransferInstruction = governedTokenAccounts.some((acc) => {
@@ -105,13 +94,11 @@ export default function useGovernanceAssets() {
   })
 
   const canUseProgramUpgradeInstruction = canUseGovernanceForInstruction([
-    GovernanceAccountType.ProgramGovernanceV1,
-    GovernanceAccountType.ProgramGovernanceV2,
+    AccountType.PROGRAM,
   ])
 
   const canUseMintInstruction = canUseGovernanceForInstruction([
-    GovernanceAccountType.MintGovernanceV1,
-    GovernanceAccountType.MintGovernanceV2,
+    AccountType.MINT,
   ])
 
   const canUseAnyInstruction =
@@ -188,27 +175,30 @@ export default function useGovernanceAssets() {
     },
     [PackageEnum.GatewayPlugin]: {
       name: 'Gateway Plugin',
+      image: '/img/civic.svg',
     },
     [PackageEnum.GoblinGold]: {
       name: 'Goblin Gold',
       image: '/img/goblingold.png',
     },
+    [PackageEnum.Identity]: {
+      name: 'Identity',
+      image: '/img/identity.png',
+    },
     [PackageEnum.NftPlugin]: {
       name: 'NFT Plugin',
     },
-    [PackageEnum.MangoMarketV3]: {
-      name: 'Mango Market v3',
-      isVisible: symbol === 'MNGO',
-      image: '/img/mango.png',
-    },
     [PackageEnum.MangoMarketV4]: {
       name: 'Mango Market v4',
-      isVisible: symbol === 'MNGO',
       image: '/img/mango.png',
     },
     [PackageEnum.MeanFinance]: {
       name: 'Mean Finance',
       image: '/img/meanfinance.png',
+    },
+    [PackageEnum.PsyFinance]: {
+      name: 'PsyFinance',
+      image: '/img/psyfinance.png',
     },
     [PackageEnum.Serum]: {
       name: 'Serum',
@@ -231,6 +221,11 @@ export default function useGovernanceAssets() {
     },
     [PackageEnum.VsrPlugin]: {
       name: 'Vsr Plugin',
+      isVisible:
+        currentPluginPk && [
+          ...vsrPluginsPks,
+          ...heliumVsrPluginsPks
+        ].includes(currentPluginPk.toBase58()),
     },
   }
 
@@ -242,11 +237,11 @@ export default function useGovernanceAssets() {
   // If isVisible is not set, it is equal to canUseAnyInstruction
   const instructionsMap: InstructionsMap = {
     /*
-       ██████  █████  ███████ ████████ ██      ███████ 
-      ██      ██   ██ ██         ██    ██      ██      
-      ██      ███████ ███████    ██    ██      █████   
-      ██      ██   ██      ██    ██    ██      ██      
-       ██████ ██   ██ ███████    ██    ███████ ███████ 
+       ██████  █████  ███████ ████████ ██      ███████
+      ██      ██   ██ ██         ██    ██      ██
+      ██      ███████ ███████    ██    ██      █████
+      ██      ██   ██      ██    ██    ██      ██
+       ██████ ██   ██ ███████    ██    ███████ ███████
     */
 
     [Instructions.DepositIntoCastle]: {
@@ -259,13 +254,16 @@ export default function useGovernanceAssets() {
     },
 
     /*
-        ██████  ██████  ███    ███ ███    ███  ██████  ███    ██ 
-       ██      ██    ██ ████  ████ ████  ████ ██    ██ ████   ██ 
-       ██      ██    ██ ██ ████ ██ ██ ████ ██ ██    ██ ██ ██  ██ 
-       ██      ██    ██ ██  ██  ██ ██  ██  ██ ██    ██ ██  ██ ██ 
+        ██████  ██████  ███    ███ ███    ███  ██████  ███    ██
+       ██      ██    ██ ████  ████ ████  ████ ██    ██ ████   ██
+       ██      ██    ██ ██ ████ ██ ██ ████ ██ ██    ██ ██ ██  ██
+       ██      ██    ██ ██  ██  ██ ██  ██  ██ ██    ██ ██  ██ ██
         ██████  ██████  ██      ██ ██      ██  ██████  ██   ████
      */
-
+    [Instructions.RevokeGoverningTokens]: {
+      name: 'Revoke Membership',
+      packageId: PackageEnum.Common,
+    },
     [Instructions.Base64]: {
       name: 'Execute Custom Instruction',
       packageId: PackageEnum.Common,
@@ -342,11 +340,6 @@ export default function useGovernanceAssets() {
       isVisible: canUseAuthorityInstruction,
       packageId: PackageEnum.Common,
     },
-    [Instructions.SagaPreOrder]: {
-      name: 'Pre-order Saga Phone',
-      isVisible: canUseTokenTransferInstruction,
-      packageId: PackageEnum.Common,
-    },
     [Instructions.StakeValidator]: {
       name: 'Stake A Validator',
       packageId: PackageEnum.Common,
@@ -369,13 +362,16 @@ export default function useGovernanceAssets() {
       name: 'Withdraw validator stake',
       packageId: PackageEnum.Common,
     },
-
+    [Instructions.SetMintAuthority]: {
+      name: 'Set Mint Authority',
+      packageId: PackageEnum.Common,
+    },
     /*
-      ██████  ██    ██  █████  ██          ███████ ██ ███    ██  █████  ███    ██  ██████ ███████ 
-      ██   ██ ██    ██ ██   ██ ██          ██      ██ ████   ██ ██   ██ ████   ██ ██      ██      
-      ██   ██ ██    ██ ███████ ██          █████   ██ ██ ██  ██ ███████ ██ ██  ██ ██      █████   
-      ██   ██ ██    ██ ██   ██ ██          ██      ██ ██  ██ ██ ██   ██ ██  ██ ██ ██      ██      
-      ██████   ██████  ██   ██ ███████     ██      ██ ██   ████ ██   ██ ██   ████  ██████ ███████                                                                                        
+      ██████  ██    ██  █████  ██          ███████ ██ ███    ██  █████  ███    ██  ██████ ███████
+      ██   ██ ██    ██ ██   ██ ██          ██      ██ ████   ██ ██   ██ ████   ██ ██      ██
+      ██   ██ ██    ██ ███████ ██          █████   ██ ██ ██  ██ ███████ ██ ██  ██ ██      █████
+      ██   ██ ██    ██ ██   ██ ██          ██      ██ ██  ██ ██ ██   ██ ██  ██ ██ ██      ██
+      ██████   ██████  ██   ██ ███████     ██      ██ ██   ████ ██   ██ ██   ████  ██████ ███████
     */
 
     [Instructions.DualFinanceStakingOption]: {
@@ -383,13 +379,38 @@ export default function useGovernanceAssets() {
       isVisible: canUseTransferInstruction,
       packageId: PackageEnum.Dual,
     },
+    [Instructions.DualFinanceLiquidityStakingOption]: {
+      name: 'Liquidity Staking Option',
+      isVisible: canUseTransferInstruction,
+      packageId: PackageEnum.Dual,
+    },
+    [Instructions.DualFinanceInitStrike]: {
+      name: 'Init Staking Option Strike',
+      isVisible: canUseTransferInstruction,
+      packageId: PackageEnum.Dual,
+    },
+    [Instructions.DualFinanceExercise]: {
+      name: 'Exercise',
+      isVisible: canUseTransferInstruction,
+      packageId: PackageEnum.Dual,
+    },
+    [Instructions.DualFinanceWithdraw]: {
+      name: 'Withdraw',
+      isVisible: canUseTransferInstruction,
+      packageId: PackageEnum.Dual,
+    },
+    [Instructions.DualFinanceAirdrop]: {
+      name: 'Airdrop',
+      isVisible: canUseTransferInstruction,
+      packageId: PackageEnum.Dual,
+    },
 
     /*
-      ███████ ██    ██ ███████ ██████  ██      ███████ ███    ██ ██████  
-      ██      ██    ██ ██      ██   ██ ██      ██      ████   ██ ██   ██ 
-      █████   ██    ██ █████   ██████  ██      █████   ██ ██  ██ ██   ██ 
-      ██       ██  ██  ██      ██   ██ ██      ██      ██  ██ ██ ██   ██ 
-      ███████   ████   ███████ ██   ██ ███████ ███████ ██   ████ ██████  
+      ███████ ██    ██ ███████ ██████  ██      ███████ ███    ██ ██████
+      ██      ██    ██ ██      ██   ██ ██      ██      ████   ██ ██   ██
+      █████   ██    ██ █████   ██████  ██      █████   ██ ██  ██ ██   ██
+      ██       ██  ██  ██      ██   ██ ██      ██      ██  ██ ██ ██   ██
+      ███████   ████   ███████ ██   ██ ███████ ███████ ██   ████ ██████
     */
 
     [Instructions.EverlendDeposit]: {
@@ -402,11 +423,11 @@ export default function useGovernanceAssets() {
     },
 
     /*
-      ███████  ██████  ██████  ███████ ███████ ██  ██████  ██   ██ ████████ 
-      ██      ██    ██ ██   ██ ██      ██      ██ ██       ██   ██    ██    
-      █████   ██    ██ ██████  █████   ███████ ██ ██   ███ ███████    ██    
-      ██      ██    ██ ██   ██ ██           ██ ██ ██    ██ ██   ██    ██    
-      ██       ██████  ██   ██ ███████ ███████ ██  ██████  ██   ██    ██    
+      ███████  ██████  ██████  ███████ ███████ ██  ██████  ██   ██ ████████
+      ██      ██    ██ ██   ██ ██      ██      ██ ██       ██   ██    ██
+      █████   ██    ██ ██████  █████   ███████ ██ ██   ███ ███████    ██
+      ██      ██    ██ ██   ██ ██           ██ ██ ██    ██ ██   ██    ██
+      ██       ██████  ██   ██ ███████ ███████ ██  ██████  ██   ██    ██
     */
 
     [Instructions.ForesightAddMarketListToCategory]: {
@@ -435,11 +456,11 @@ export default function useGovernanceAssets() {
     },
 
     /*
-      ███████ ██████  ██ ██   ██ ████████ ██  ██████  ███    ██ 
-      ██      ██   ██ ██ ██  ██     ██    ██ ██    ██ ████   ██ 
-      █████   ██████  ██ █████      ██    ██ ██    ██ ██ ██  ██ 
-      ██      ██   ██ ██ ██  ██     ██    ██ ██    ██ ██  ██ ██ 
-      ██      ██   ██ ██ ██   ██    ██    ██  ██████  ██   ████ 
+      ███████ ██████  ██ ██   ██ ████████ ██  ██████  ███    ██
+      ██      ██   ██ ██ ██  ██     ██    ██ ██    ██ ████   ██
+      █████   ██████  ██ █████      ██    ██ ██    ██ ██ ██  ██
+      ██      ██   ██ ██ ██  ██     ██    ██ ██    ██ ██  ██ ██
+      ██      ██   ██ ██ ██   ██    ██    ██  ██████  ██   ████
     */
 
     [Instructions.ClaimPendingDeposit]: {
@@ -460,30 +481,11 @@ export default function useGovernanceAssets() {
     },
 
     /*
-      ██████   █████  ████████ ███████ ██     ██  █████  ██    ██     ██████  ██      ██    ██  ██████  ██ ███    ██ 
-     ██       ██   ██    ██    ██      ██     ██ ██   ██  ██  ██      ██   ██ ██      ██    ██ ██       ██ ████   ██ 
-     ██   ███ ███████    ██    █████   ██  █  ██ ███████   ████       ██████  ██      ██    ██ ██   ███ ██ ██ ██  ██ 
-     ██    ██ ██   ██    ██    ██      ██ ███ ██ ██   ██    ██        ██      ██      ██    ██ ██    ██ ██ ██  ██ ██ 
-      ██████  ██   ██    ██    ███████  ███ ███  ██   ██    ██        ██      ███████  ██████   ██████  ██ ██   ████ 
-    */
-
-    [Instructions.ConfigureGatewayPlugin]: {
-      name: 'Configure',
-      isVisible: canUseAuthorityInstruction,
-      packageId: PackageEnum.GatewayPlugin,
-    },
-    [Instructions.CreateGatewayPluginRegistrar]: {
-      name: 'Create registrar',
-      isVisible: canUseAuthorityInstruction,
-      packageId: PackageEnum.GatewayPlugin,
-    },
-
-    /*
-       ██████   ██████  ██████  ██      ██ ███    ██  ██████   ██████  ██      ██████  
-      ██       ██    ██ ██   ██ ██      ██ ████   ██ ██       ██    ██ ██      ██   ██ 
-      ██   ███ ██    ██ ██████  ██      ██ ██ ██  ██ ██   ███ ██    ██ ██      ██   ██ 
-      ██    ██ ██    ██ ██   ██ ██      ██ ██  ██ ██ ██    ██ ██    ██ ██      ██   ██ 
-       ██████   ██████  ██████  ███████ ██ ██   ████  ██████   ██████  ███████ ██████  
+       ██████   ██████  ██████  ██      ██ ███    ██  ██████   ██████  ██      ██████
+      ██       ██    ██ ██   ██ ██      ██ ████   ██ ██       ██    ██ ██      ██   ██
+      ██   ███ ██    ██ ██████  ██      ██ ██ ██  ██ ██   ███ ██    ██ ██      ██   ██
+      ██    ██ ██    ██ ██   ██ ██      ██ ██  ██ ██ ██    ██ ██    ██ ██      ██   ██
+       ██████   ██████  ██████  ███████ ██ ██   ████  ██████   ██████  ███████ ██████
     */
 
     [Instructions.DepositIntoGoblinGold]: {
@@ -496,11 +498,50 @@ export default function useGovernanceAssets() {
     },
 
     /*
-      ███    ██ ███████ ████████     ██████  ██      ██    ██  ██████  ██ ███    ██ 
-      ████   ██ ██         ██        ██   ██ ██      ██    ██ ██       ██ ████   ██ 
-      ██ ██  ██ █████      ██        ██████  ██      ██    ██ ██   ███ ██ ██ ██  ██ 
-      ██  ██ ██ ██         ██        ██      ██      ██    ██ ██    ██ ██ ██  ██ ██ 
-      ██   ████ ██         ██        ██      ███████  ██████   ██████  ██ ██   ████ 
+      ██ ██████  ███████ ███    ██ ████████ ██ ████████ ██    ██
+      ██ ██   ██ ██      ████   ██    ██    ██    ██     ██  ██
+      ██ ██   ██ █████   ██ ██  ██    ██    ██    ██      ████
+      ██ ██   ██ ██      ██  ██ ██    ██    ██    ██       ██
+      ██ ██████  ███████ ██   ████    ██    ██    ██       ██
+    */
+
+    [Instructions.ConfigureGatewayPlugin]: {
+      name: 'Configure',
+      isVisible: canUseAuthorityInstruction,
+      packageId: PackageEnum.GatewayPlugin,
+    },
+    [Instructions.CreateGatewayPluginRegistrar]: {
+      name: 'Create registrar',
+      isVisible: canUseAuthorityInstruction,
+      packageId: PackageEnum.GatewayPlugin,
+    },
+    [Instructions.AddKeyToDID]: {
+      name: 'Add Key to DID',
+      isVisible: canUseAnyInstruction,
+      packageId: PackageEnum.Identity,
+    },
+    [Instructions.RemoveKeyFromDID]: {
+      name: 'Remove Key from DID',
+      isVisible: canUseAnyInstruction,
+      packageId: PackageEnum.Identity,
+    },
+    [Instructions.AddServiceToDID]: {
+      name: 'Add Service to DID',
+      isVisible: canUseAnyInstruction,
+      packageId: PackageEnum.Identity,
+    },
+    [Instructions.RemoveServiceFromDID]: {
+      name: 'Remove Service from DID',
+      isVisible: canUseAnyInstruction,
+      packageId: PackageEnum.Identity,
+    },
+
+    /*
+      ███    ██ ███████ ████████     ██████  ██      ██    ██  ██████  ██ ███    ██
+      ████   ██ ██         ██        ██   ██ ██      ██    ██ ██       ██ ████   ██
+      ██ ██  ██ █████      ██        ██████  ██      ██    ██ ██   ███ ██ ██ ██  ██
+      ██  ██ ██ ██         ██        ██      ██      ██    ██ ██    ██ ██ ██  ██ ██
+      ██   ████ ██         ██        ██      ███████  ██████   ██████  ██ ██   ████
     */
 
     [Instructions.ConfigureNftPluginCollection]: {
@@ -520,138 +561,94 @@ export default function useGovernanceAssets() {
     },
 
     /*
-      ███    ███  █████  ███    ██  ██████   ██████      ██    ██ ██████  
-      ████  ████ ██   ██ ████   ██ ██       ██    ██     ██    ██      ██ 
-      ██ ████ ██ ███████ ██ ██  ██ ██   ███ ██    ██     ██    ██  █████  
-      ██  ██  ██ ██   ██ ██  ██ ██ ██    ██ ██    ██      ██  ██       ██ 
-      ██      ██ ██   ██ ██   ████  ██████   ██████        ████   ██████  
-    */
-
-    [Instructions.ClaimMangoTokens]: {
-      name: 'Claim Tokens',
-      isVisible: canUseTokenTransferInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-    [Instructions.DepositToMangoAccount]: {
-      name: 'Deposit to mango account',
-      isVisible: canUseTokenTransferInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-    [Instructions.DepositToMangoAccountCsv]: {
-      name: 'Deposit to mango account with CSV',
-      isVisible: canUseTokenTransferInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-    [Instructions.MangoAddOracle]: {
-      name: 'Add Oracle',
-      isVisible: canUseProgramUpgradeInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-    [Instructions.MangoAddSpotMarket]: {
-      name: 'Add Spot Market',
-      isVisible: canUseProgramUpgradeInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-    [Instructions.MangoChangeMaxAccounts]: {
-      name: 'Change Max Accounts',
-      isVisible: canUseProgramUpgradeInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-    [Instructions.MangoChangePerpMarket]: {
-      name: 'Change Perp Market',
-      isVisible: canUseProgramUpgradeInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-    [Instructions.MangoChangeQuoteParams]: {
-      name: 'Change Quote Params',
-      isVisible: canUseProgramUpgradeInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-    [Instructions.MangoChangeReferralFeeParams]: {
-      name: 'Change Referral Fee Params',
-      isVisible: canUseProgramUpgradeInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-    [Instructions.MangoChangeReferralFeeParams2]: {
-      name: 'Change Referral Fee Params V2',
-      isVisible: canUseProgramUpgradeInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-    [Instructions.MangoChangeSpotMarket]: {
-      name: 'Change Spot Market',
-      isVisible: canUseProgramUpgradeInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-    [Instructions.MangoCreatePerpMarket]: {
-      name: 'Create Perp Market',
-      isVisible: canUseProgramUpgradeInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-    [Instructions.MangoRemoveOracle]: {
-      name: 'Remove Oracle',
-      isVisible: canUseProgramUpgradeInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-    [Instructions.MangoRemovePerpMarket]: {
-      name: 'Remove Perp Market',
-      isVisible: canUseProgramUpgradeInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-    [Instructions.MangoRemoveSpotMarket]: {
-      name: 'Remove Spot Market',
-      isVisible: canUseProgramUpgradeInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-    [Instructions.MangoSetMarketMode]: {
-      name: 'Set Market Mode',
-      isVisible: canUseProgramUpgradeInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-    [Instructions.MangoSwapSpotMarket]: {
-      name: 'Swap Spot Market',
-      isVisible: canUseProgramUpgradeInstruction,
-      packageId: PackageEnum.MangoMarketV3,
-    },
-
-    /*
-      ███    ███  █████  ███    ██  ██████   ██████      ██    ██ ██   ██ 
-      ████  ████ ██   ██ ████   ██ ██       ██    ██     ██    ██ ██   ██ 
-      ██ ████ ██ ███████ ██ ██  ██ ██   ███ ██    ██     ██    ██ ███████ 
-      ██  ██  ██ ██   ██ ██  ██ ██ ██    ██ ██    ██      ██  ██       ██ 
-      ██      ██ ██   ██ ██   ████  ██████   ██████        ████        ██ 
+      ███    ███  █████  ███    ██  ██████   ██████      ██    ██ ██   ██
+      ████  ████ ██   ██ ████   ██ ██       ██    ██     ██    ██ ██   ██
+      ██ ████ ██ ███████ ██ ██  ██ ██   ███ ██    ██     ██    ██ ███████
+      ██  ██  ██ ██   ██ ██  ██ ██ ██    ██ ██    ██      ██  ██       ██
+      ██      ██ ██   ██ ██   ████  ██████   ██████        ████        ██
     */
 
     [Instructions.MangoV4PerpCreate]: {
-      name: 'Perp Create',
+      name: 'Create Perp',
       packageId: PackageEnum.MangoMarketV4,
+      isVisible: canUseAnyInstruction,
     },
     [Instructions.MangoV4PerpEdit]: {
-      name: 'Perp Edit',
+      name: 'Edit Perp',
       packageId: PackageEnum.MangoMarketV4,
+      isVisible: canUseAnyInstruction,
     },
-    [Instructions.MangoV4Serum3RegisterMarket]: {
-      name: 'Serum 3 Register Market',
+    [Instructions.MangoV4OpenBookRegisterMarket]: {
+      name: 'Register Openbook Market',
       packageId: PackageEnum.MangoMarketV4,
+      isVisible: canUseAnyInstruction,
     },
     [Instructions.MangoV4TokenEdit]: {
-      name: 'Token Edit',
+      name: 'Edit Token',
       packageId: PackageEnum.MangoMarketV4,
+      isVisible: canUseAnyInstruction,
     },
     [Instructions.MangoV4TokenRegister]: {
-      name: 'Token Register',
+      name: 'Register Token',
       packageId: PackageEnum.MangoMarketV4,
+      isVisible: canUseAnyInstruction,
     },
     [Instructions.MangoV4TokenRegisterTrustless]: {
-      name: 'Token Register Trustless',
+      name: 'Register Trustless Token',
       packageId: PackageEnum.MangoMarketV4,
+      isVisible: canUseAnyInstruction,
     },
-
+    [Instructions.MangoV4GroupEdit]: {
+      name: 'Edit Group',
+      packageId: PackageEnum.MangoMarketV4,
+      isVisible: canUseAnyInstruction,
+    },
+    [Instructions.MangoV4OpenBookEditMarket]: {
+      name: 'Edit Openbook Market',
+      packageId: PackageEnum.MangoMarketV4,
+      isVisible: canUseAnyInstruction,
+    },
+    [Instructions.MangoV4IxGateSet]: {
+      name: 'Enable/Disable individual instructions in Group',
+      packageId: PackageEnum.MangoMarketV4,
+      isVisible: canUseAnyInstruction,
+    },
+    [Instructions.MangoV4StubOracleCreate]: {
+      name: 'Create Stub Oracle',
+      packageId: PackageEnum.MangoMarketV4,
+      isVisible: canUseAnyInstruction,
+    },
+    [Instructions.MangoV4StubOracleSet]: {
+      name: 'Set Stub Oracle Value',
+      packageId: PackageEnum.MangoMarketV4,
+      isVisible: canUseAnyInstruction,
+    },
+    [Instructions.MangoV4AltSet]: {
+      name: 'Set Address Lookup Table for Group',
+      packageId: PackageEnum.MangoMarketV4,
+      isVisible: canUseAnyInstruction,
+    },
+    [Instructions.MangoV4AltExtend]: {
+      name: 'Extend Address Lookup Table',
+      packageId: PackageEnum.MangoMarketV4,
+      isVisible: canUseAnyInstruction,
+    },
+    [Instructions.MangoV4TokenAddBank]: {
+      name: 'Add additional Bank to an existing Token',
+      packageId: PackageEnum.MangoMarketV4,
+      isVisible: canUseAnyInstruction,
+    },
+    [Instructions.IdlSetBuffer]: {
+      name: 'Idl Set Buffer',
+      packageId: PackageEnum.MangoMarketV4,
+      isVisible: canUseAnyInstruction,
+    },
     /*
-      ███    ███ ███████  █████  ███    ██     ███████ ██ ███    ██  █████  ███    ██  ██████ ███████ 
-      ████  ████ ██      ██   ██ ████   ██     ██      ██ ████   ██ ██   ██ ████   ██ ██      ██      
-      ██ ████ ██ █████   ███████ ██ ██  ██     █████   ██ ██ ██  ██ ███████ ██ ██  ██ ██      █████   
-      ██  ██  ██ ██      ██   ██ ██  ██ ██     ██      ██ ██  ██ ██ ██   ██ ██  ██ ██ ██      ██      
-      ██      ██ ███████ ██   ██ ██   ████     ██      ██ ██   ████ ██   ██ ██   ████  ██████ ███████ 
+      ███    ███ ███████  █████  ███    ██     ███████ ██ ███    ██  █████  ███    ██  ██████ ███████
+      ████  ████ ██      ██   ██ ████   ██     ██      ██ ████   ██ ██   ██ ████   ██ ██      ██
+      ██ ████ ██ █████   ███████ ██ ██  ██     █████   ██ ██ ██  ██ ███████ ██ ██  ██ ██      █████
+      ██  ██  ██ ██      ██   ██ ██  ██ ██     ██      ██ ██  ██ ██ ██   ██ ██  ██ ██ ██      ██
+      ██      ██ ███████ ██   ██ ██   ████     ██      ██ ██   ████ ██   ██ ██   ████  ██████ ███████
     */
 
     [Instructions.MeanCreateAccount]: {
@@ -676,11 +673,36 @@ export default function useGovernanceAssets() {
     },
 
     /*
-      ███████ ███████ ██████  ██    ██ ███    ███ 
-      ██      ██      ██   ██ ██    ██ ████  ████ 
-      ███████ █████   ██████  ██    ██ ██ ████ ██ 
-           ██ ██      ██   ██ ██    ██ ██  ██  ██ 
-      ███████ ███████ ██   ██  ██████  ██      ██ 
+      ██████  ███████ ██    ██  ███████ ██ ███    ██  █████  ███    ██  ██████ ███████
+      ██   ██ ██       ██  ██   ██      ██ ████   ██ ██   ██ ████   ██ ██      ██     
+      ██████  ███████   ████    █████   ██ ██ ██  ██ ███████ ██ ██  ██ ██      █████  
+      ██           ██    ██     ██      ██ ██  ██ ██ ██   ██ ██  ██ ██ ██      ██      
+      ██      ███████    ██     ██      ██ ██   ████ ██   ██ ██   ████  ██████ ███████ 
+    */
+
+    [Instructions.PsyFinanceMintAmericanOptions]: {
+      name: ' Mint American Options',
+      packageId: PackageEnum.PsyFinance,
+    },
+    [Instructions.PsyFinanceBurnWriterForQuote]: {
+      name: 'Claim Quote with Writer Token',
+      packageId: PackageEnum.PsyFinance,
+    },
+    [Instructions.PsyFinanceClaimUnderlyingPostExpiration]: {
+      name: 'Claim Underlying (post expiration)',
+      packageId: PackageEnum.PsyFinance,
+    },
+    [Instructions.PsyFinanceExerciseOption]: {
+      name: 'Exercise Option',
+      packageId: PackageEnum.PsyFinance,
+    },
+
+    /*
+      ███████ ███████ ██████  ██    ██ ███    ███
+      ██      ██      ██   ██ ██    ██ ████  ████
+      ███████ █████   ██████  ██    ██ ██ ████ ██
+           ██ ██      ██   ██ ██    ██ ██  ██  ██
+      ███████ ███████ ██   ██  ██████  ██      ██
     */
 
     [Instructions.SerumGrantLockedMSRM]: {
@@ -713,11 +735,11 @@ export default function useGovernanceAssets() {
     },
 
     /*
-      ███████  ██████  ██      ███████ ███    ██ ██████  
-      ██      ██    ██ ██      ██      ████   ██ ██   ██ 
-      ███████ ██    ██ ██      █████   ██ ██  ██ ██   ██ 
-           ██ ██    ██ ██      ██      ██  ██ ██ ██   ██ 
-      ███████  ██████  ███████ ███████ ██   ████ ██████  
+      ███████  ██████  ██      ███████ ███    ██ ██████
+      ██      ██    ██ ██      ██      ████   ██ ██   ██
+      ███████ ██    ██ ██      █████   ██ ██  ██ ██   ██
+           ██ ██    ██ ██      ██      ██  ██ ██ ██   ██
+      ███████  ██████  ███████ ███████ ██   ████ ██████
     */
 
     [Instructions.CreateSolendObligationAccount]: {
@@ -746,11 +768,11 @@ export default function useGovernanceAssets() {
     },
 
     /*
-      ███████ ████████ ██████  ███████  █████  ███    ███ ███████ ██       ██████  ██     ██ 
-      ██         ██    ██   ██ ██      ██   ██ ████  ████ ██      ██      ██    ██ ██     ██ 
-      ███████    ██    ██████  █████   ███████ ██ ████ ██ █████   ██      ██    ██ ██  █  ██ 
-           ██    ██    ██   ██ ██      ██   ██ ██  ██  ██ ██      ██      ██    ██ ██ ███ ██ 
-      ███████    ██    ██   ██ ███████ ██   ██ ██      ██ ██      ███████  ██████   ███ ███  
+      ███████ ████████ ██████  ███████  █████  ███    ███ ███████ ██       ██████  ██     ██
+      ██         ██    ██   ██ ██      ██   ██ ████  ████ ██      ██      ██    ██ ██     ██
+      ███████    ██    ██████  █████   ███████ ██ ████ ██ █████   ██      ██    ██ ██  █  ██
+           ██    ██    ██   ██ ██      ██   ██ ██  ██  ██ ██      ██      ██    ██ ██ ███ ██
+      ███████    ██    ██   ██ ███████ ██   ██ ██      ██ ██      ███████  ██████   ███ ███
     */
 
     // [Instructions.CancelStream]: {
@@ -763,11 +785,11 @@ export default function useGovernanceAssets() {
     // },
 
     /*
-      ███████ ██     ██ ██ ████████  ██████ ██   ██ ██████   ██████   █████  ██████  ██████  
-      ██      ██     ██ ██    ██    ██      ██   ██ ██   ██ ██    ██ ██   ██ ██   ██ ██   ██ 
-      ███████ ██  █  ██ ██    ██    ██      ███████ ██████  ██    ██ ███████ ██████  ██   ██ 
-           ██ ██ ███ ██ ██    ██    ██      ██   ██ ██   ██ ██    ██ ██   ██ ██   ██ ██   ██ 
-      ███████  ███ ███  ██    ██     ██████ ██   ██ ██████   ██████  ██   ██ ██   ██ ██████  
+      ███████ ██     ██ ██ ████████  ██████ ██   ██ ██████   ██████   █████  ██████  ██████
+      ██      ██     ██ ██    ██    ██      ██   ██ ██   ██ ██    ██ ██   ██ ██   ██ ██   ██
+      ███████ ██  █  ██ ██    ██    ██      ███████ ██████  ██    ██ ███████ ██████  ██   ██
+           ██ ██ ███ ██ ██    ██    ██      ██   ██ ██   ██ ██    ██ ██   ██ ██   ██ ██   ██
+      ███████  ███ ███  ██    ██     ██████ ██   ██ ██████   ██████  ██   ██ ██   ██ ██████
     */
 
     [Instructions.SwitchboardAdmitOracle]: {
@@ -780,11 +802,11 @@ export default function useGovernanceAssets() {
     },
 
     /*
-      ██    ██ ███████ ██████      ██████  ██      ██    ██  ██████  ██ ███    ██ 
-      ██    ██ ██      ██   ██     ██   ██ ██      ██    ██ ██       ██ ████   ██ 
-      ██    ██ ███████ ██████      ██████  ██      ██    ██ ██   ███ ██ ██ ██  ██ 
-       ██  ██       ██ ██   ██     ██      ██      ██    ██ ██    ██ ██ ██  ██ ██ 
-        ████   ███████ ██   ██     ██      ███████  ██████   ██████  ██ ██   ████ 
+      ██    ██ ███████ ██████      ██████  ██      ██    ██  ██████  ██ ███    ██
+      ██    ██ ██      ██   ██     ██   ██ ██      ██    ██ ██       ██ ████   ██
+      ██    ██ ███████ ██████      ██████  ██      ██    ██ ██   ███ ██ ██ ██  ██
+       ██  ██       ██ ██   ██     ██      ██      ██    ██ ██    ██ ██ ██  ██ ██
+        ████   ███████ ██   ██     ██      ███████  ██████   ██████  ██ ██   ████
     */
 
     [Instructions.CreateVsrRegistrar]: {
@@ -834,7 +856,6 @@ export default function useGovernanceAssets() {
     auxiliaryTokenAccounts,
     availableInstructions,
     availablePackages,
-    canMintRealmCommunityToken,
     canMintRealmCouncilToken,
     canUseAuthorityInstruction,
     canUseMintInstruction,

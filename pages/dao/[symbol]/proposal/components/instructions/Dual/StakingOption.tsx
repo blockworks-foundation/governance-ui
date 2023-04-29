@@ -9,10 +9,11 @@ import { NewProposalContext } from '../../../new'
 import GovernedAccountSelect from '../../GovernedAccountSelect'
 import useGovernanceAssets from '@hooks/useGovernanceAssets'
 import Input from '@components/inputs/Input'
-import getConfigInstruction from '@utils/instructions/Dual'
+import { getConfigInstruction } from '@utils/instructions/Dual'
 import useWalletStore from 'stores/useWalletStore'
 import { getDualFinanceStakingOptionSchema } from '@utils/validations'
 import Tooltip from '@components/Tooltip'
+import useWalletOnePointOh from '@hooks/useWalletOnePointOh'
 
 const StakingOption = ({
   index,
@@ -33,9 +34,9 @@ const StakingOption = ({
     strike: 0,
   })
   const connection = useWalletStore((s) => s.connection)
-  const wallet = useWalletStore((s) => s.current)
+  const wallet = useWalletOnePointOh()
   const shouldBeGoverned = !!(index !== 0 && governance)
-  const { governedTokenAccountsWithoutNfts } = useGovernanceAssets()
+  const { assetAccounts } = useGovernanceAssets()
   const [governedAccount, setGovernedAccount] = useState<
     ProgramAccount<Governance> | undefined
   >(undefined)
@@ -46,25 +47,25 @@ const StakingOption = ({
     setFormErrors({})
     setForm({ ...form, [propertyName]: value })
   }
-  function getInstruction(): Promise<UiInstruction> {
-    return getConfigInstruction({
-      connection,
-      form,
-      schema,
-      setFormErrors,
-      wallet,
-    })
-  }
+  const schema = getDualFinanceStakingOptionSchema()
   useEffect(() => {
+    function getInstruction(): Promise<UiInstruction> {
+      return getConfigInstruction({
+        connection,
+        form,
+        schema,
+        setFormErrors,
+        wallet,
+      })
+    }
     handleSetInstructions(
       { governedAccount: governedAccount, getInstruction },
       index
     )
-  }, [form])
+  }, [form, governedAccount, handleSetInstructions, index, connection, schema, wallet])
   useEffect(() => {
     setGovernedAccount(form.baseTreasury?.governance)
   }, [form.baseTreasury])
-  const schema = getDualFinanceStakingOptionSchema()
 
   return (
     <>
@@ -85,27 +86,27 @@ const StakingOption = ({
       <Tooltip content="Treasury owned account providing the assets for the option. When the recipient exercises, these are the tokens they receive. For SOL/USDC Calls, enter SOL. For SOL/USDC Puts, enter USDC.">
         <GovernedAccountSelect
           label="Base Treasury"
-          governedAccounts={governedTokenAccountsWithoutNfts}
+          governedAccounts={assetAccounts}
           onChange={(value) => {
             handleSetForm({ value, propertyName: 'baseTreasury' })
           }}
           value={form.baseTreasury}
           error={formErrors['baseTreasury']}
-          shouldBeGoverned={shouldBeGoverned}
           governance={governance}
+          type="token"
         ></GovernedAccountSelect>
       </Tooltip>
       <Tooltip content="Treasury owned account receiving payment for the option exercise. This is where payments from exercise accumulate. For SOL/USDC Calls, enter USDC. For SOL/USDC Puts, enter SOL.">
         <GovernedAccountSelect
           label="Quote Treasury"
-          governedAccounts={governedTokenAccountsWithoutNfts}
+          governedAccounts={assetAccounts}
           onChange={(value) => {
             handleSetForm({ value, propertyName: 'quoteTreasury' })
           }}
           value={form.quoteTreasury}
           error={formErrors['quoteTreasury']}
-          shouldBeGoverned={shouldBeGoverned}
           governance={governance}
+          type="token"
         ></GovernedAccountSelect>
       </Tooltip>
       <Tooltip content="How many tokens are in the staking options. Units are in atoms of the base token.">
@@ -167,7 +168,7 @@ const StakingOption = ({
       <Tooltip content="Rent payer. Should be the governance wallet with same governance as base treasury">
         <GovernedAccountSelect
           label="Payer Account"
-          governedAccounts={governedTokenAccountsWithoutNfts.filter(
+          governedAccounts={assetAccounts.filter(
             (x) =>
               x.isSol &&
               form.baseTreasury?.governance &&

@@ -31,49 +31,80 @@ export const RealmSearchNavigation = forwardRef<HTMLInputElement, Props>(
     const options = pipe(
       result,
       RE.match(
-        () => [],
-        () => [],
-        ({ realmDropdownList }) => {
-          return [
-            {
-              key: ECOSYSTEM_PAGE.toBase58(),
-              iconUrl: ecosystemIcon.src,
-              name: 'Solana Ecosystem',
-              publicKey: ECOSYSTEM_PAGE,
-              url: '/ecosystem',
-            } as {
-              key: string;
-              iconUrl: null | string;
-              name: string;
-              publicKey: PublicKey;
-              url: string;
-            },
-          ]
-            .concat(
-              realmDropdownList.map((item) => ({
+        () => ({ following: [], all: [] }),
+        () => ({ following: [], all: [] }),
+        ({ me, realmDropdownList }) => {
+          const followedRealms = me?.followedRealms || [];
+          const followedRealmsPks = followedRealms.map((r) =>
+            r.publicKey.toBase58(),
+          );
+
+          return {
+            following: followedRealms
+              .map((item) => ({
                 key: item.publicKey.toBase58(),
                 iconUrl: item.iconUrl,
                 name: item.displayName || item.name,
                 publicKey: item.publicKey,
                 url: `/realm/${item.urlId}/hub`,
-              })),
-            )
-            .filter((item) => {
-              if (STEALTH_HUBS.has(item.publicKey.toBase58())) {
-                return false;
-              }
+              }))
+              .filter((choice) => {
+                if (!text) {
+                  return true;
+                }
 
-              return true;
-            })
-            .filter((choice) => {
-              if (!text) {
+                return choice.name
+                  .toLocaleLowerCase()
+                  .includes(text.toLocaleLowerCase());
+              }),
+            all: [
+              {
+                key: ECOSYSTEM_PAGE.toBase58(),
+                iconUrl: ecosystemIcon.src,
+                name: 'Solana Ecosystem',
+                publicKey: ECOSYSTEM_PAGE,
+                url: '/ecosystem',
+              } as {
+                key: string;
+                iconUrl: null | string;
+                name: string;
+                publicKey: PublicKey;
+                url: string;
+              },
+            ]
+              .concat(
+                realmDropdownList.map((item) => ({
+                  key: item.publicKey.toBase58(),
+                  iconUrl: item.iconUrl,
+                  name: item.displayName || item.name,
+                  publicKey: item.publicKey,
+                  url: `/realm/${item.urlId}/hub`,
+                })),
+              )
+              .filter((item) => {
+                if (followedRealmsPks.includes(item.publicKey.toBase58())) {
+                  return false;
+                }
+
                 return true;
-              }
+              })
+              .filter((item) => {
+                if (STEALTH_HUBS.has(item.publicKey.toBase58())) {
+                  return false;
+                }
 
-              return choice.name
-                .toLocaleLowerCase()
-                .includes(text.toLocaleLowerCase());
-            });
+                return true;
+              })
+              .filter((choice) => {
+                if (!text) {
+                  return true;
+                }
+
+                return choice.name
+                  .toLocaleLowerCase()
+                  .includes(text.toLocaleLowerCase());
+              }),
+          };
         },
       ),
     );
@@ -98,8 +129,12 @@ export const RealmSearchNavigation = forwardRef<HTMLInputElement, Props>(
                 'placeholder:transition-colors',
                 'focus:placeholder:text-neutral-300',
                 'focus:outline-none',
+                'dark:bg-neutral-900',
+                'dark:border-neutral-700',
+                'dark:placeholder:text-neutral-400',
+                'dark:focus:placeholder:text-neutral-200',
               )}
-              placeholder="Communities"
+              placeholder="Organizations"
               ref={inputRef}
               value={text}
               onChange={(e) => setText(e.currentTarget.value)}
@@ -114,10 +149,12 @@ export const RealmSearchNavigation = forwardRef<HTMLInputElement, Props>(
                 'left-4',
                 'top-1/2',
                 'w-4',
+                'dark:fill-neutral-400',
               )}
             />
             <button
               className={cx(
+                'dark:text-neutral-400',
                 '-translate-y-1/2',
                 'absolute',
                 'focus:opacity-100',
@@ -155,6 +192,7 @@ export const RealmSearchNavigation = forwardRef<HTMLInputElement, Props>(
               align="start"
               sideOffset={4}
               className={cx(
+                'dark:bg-neutral-900',
                 'drop-shadow-lg',
                 'bg-white',
                 'overflow-hidden',
@@ -169,39 +207,101 @@ export const RealmSearchNavigation = forwardRef<HTMLInputElement, Props>(
                 }
               }}
             >
-              <div className="p-2 text-xs text-neutral-500">
-                {text ? 'Results' : 'All communities'}
-              </div>
               <div className="max-h-[350px] overflow-y-auto">
-                {options.map((option, i) => (
-                  <Link passHref href={option.url} key={option.key + i}>
-                    <a
-                      className={cx(
-                        'flex',
-                        'gap-x-2',
-                        'grid-cols-[24px,1fr]',
-                        'grid',
-                        'items-center',
-                        'p-2',
-                        'transition-colors',
-                        'w-full',
-                        'hover:bg-neutral-200',
-                      )}
-                      onClick={(e) => {
-                        setOpen(false);
-                      }}
-                    >
-                      <RealmIcon
-                        className="h-6 w-6"
-                        iconUrl={option.iconUrl}
-                        name={option.name}
-                      />
-                      <div className="text-sm text-neutral-900">
-                        {option.name}
-                      </div>
-                    </a>
-                  </Link>
-                ))}
+                {!!options.following.length && (
+                  <>
+                    <div className="p-2 text-xs text-neutral-500">
+                      Following
+                    </div>
+                    <div>
+                      {options.following.map((option, i) => (
+                        <Link passHref href={option.url} key={option.key + i}>
+                          <a
+                            className={cx(
+                              'flex',
+                              'gap-x-2',
+                              'grid-cols-[24px,1fr]',
+                              'grid',
+                              'group',
+                              'items-center',
+                              'p-2',
+                              'transition-colors',
+                              'w-full',
+                              'hover:bg-neutral-200',
+                              'dark:hover:bg-neutral-700',
+                            )}
+                            onClick={() => {
+                              setText('');
+                              setOpen(false);
+                            }}
+                          >
+                            <RealmIcon
+                              className="h-6 w-6"
+                              iconUrl={option.iconUrl}
+                              name={option.name}
+                            />
+                            <div
+                              className={cx(
+                                'text-sm',
+                                'text-neutral-900',
+                                'transition-colors',
+                                'dark:text-neutral-400',
+                                'dark:group-hover:text-neutral-200',
+                              )}
+                            >
+                              {option.name}
+                            </div>
+                          </a>
+                        </Link>
+                      ))}
+                    </div>
+                  </>
+                )}
+                <div className="p-2 text-xs text-neutral-500">
+                  All communities
+                </div>
+                <div>
+                  {options.all.map((option, i) => (
+                    <Link passHref href={option.url} key={option.key + i}>
+                      <a
+                        className={cx(
+                          'flex',
+                          'gap-x-2',
+                          'grid-cols-[24px,1fr]',
+                          'grid',
+                          'group',
+                          'items-center',
+                          'p-2',
+                          'transition-colors',
+                          'w-full',
+                          'hover:bg-neutral-200',
+                          'dark:hover:bg-neutral-700',
+                        )}
+                        onClick={() => {
+                          setText('');
+                          setOpen(false);
+                        }}
+                      >
+                        <RealmIcon
+                          className="h-6 w-6"
+                          iconUrl={option.iconUrl}
+                          name={option.name}
+                        />
+                        <div
+                          className={cx(
+                            'text-sm',
+                            'text-neutral-900',
+                            'transition-colors',
+                            'dark:text-neutral-400',
+                            'dark:group-hover:text-neutral-200',
+                          )}
+                        >
+                          {option.name}
+                        </div>
+                      </a>
+                    </Link>
+                  ))}
+                </div>
               </div>
             </Popover.Content>
           </Popover.Portal>

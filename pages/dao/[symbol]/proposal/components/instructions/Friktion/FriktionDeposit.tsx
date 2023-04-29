@@ -18,6 +18,7 @@ import GovernedAccountSelect from '../../GovernedAccountSelect'
 import { getFriktionDepositInstruction } from '@utils/instructions/Friktion'
 import Select from '@components/inputs/Select'
 import { FriktionSnapshot, VoltSnapshot } from '@friktion-labs/friktion-sdk'
+import useWalletOnePointOh from '@hooks/useWalletOnePointOh'
 
 const FriktionDeposit = ({
   index,
@@ -27,7 +28,7 @@ const FriktionDeposit = ({
   governance: ProgramAccount<Governance> | null
 }) => {
   const connection = useWalletStore((s) => s.connection)
-  const wallet = useWalletStore((s) => s.current)
+  const wallet = useWalletOnePointOh()
   const { realmInfo } = useRealm()
   const { governedTokenAccountsWithoutNfts } = useGovernanceAssets()
   const shouldBeGoverned = !!(index !== 0 && governance)
@@ -136,6 +137,7 @@ const FriktionDeposit = ({
         error={formErrors['governedTokenAccount']}
         shouldBeGoverned={shouldBeGoverned}
         governance={governance}
+        type="token"
       ></GovernedAccountSelect>
       <Select
         label="Friktion Volt"

@@ -15,8 +15,11 @@ import {
 } from '@tools/sdk/units'
 import BigNumber from 'bignumber.js'
 import React, { useEffect, useState } from 'react'
+import { BaseGovernanceFormFieldsV3 } from './BaseGovernanceForm-data'
+import { BaseGovernanceFormV3 } from './BaseGovernanceFormV3'
 
-export interface BaseGovernanceFormFields {
+export interface BaseGovernanceFormFieldsV2 {
+  _programVersion: 2
   minCommunityTokensToCreateProposal: number | string
   minInstructionHoldUpTime: number
   maxVotingTime: number
@@ -26,7 +29,17 @@ export interface BaseGovernanceFormFields {
   votingCoolOffTime: number
 }
 
-const BaseGovernanceForm = ({ formErrors, form, setForm, setFormErrors }) => {
+const BaseGovernanceFormV2 = ({
+  formErrors,
+  form,
+  setForm,
+  setFormErrors,
+}: {
+  formErrors: any
+  setForm: any
+  setFormErrors: any
+  form: BaseGovernanceFormFieldsV2
+}) => {
   const { realmInfo, mint: realmMint } = useRealm()
   const [minTokensPercentage, setMinTokensPercentage] = useState<
     number | undefined
@@ -259,6 +272,21 @@ const BaseGovernanceForm = ({ formErrors, form, setForm, setFormErrors }) => {
           ))}
       </Select>
     </>
+  )
+}
+const BaseGovernanceForm = ({
+  form,
+  ...props
+}: {
+  formErrors: any
+  setForm: any
+  setFormErrors: any
+  form: BaseGovernanceFormFieldsV3 | BaseGovernanceFormFieldsV2
+}) => {
+  return form._programVersion === 3 ? (
+    <BaseGovernanceFormV3 form={form} {...props} />
+  ) : (
+    <BaseGovernanceFormV2 form={form} {...props} />
   )
 }
 

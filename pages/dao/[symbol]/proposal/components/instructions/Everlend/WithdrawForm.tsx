@@ -34,6 +34,7 @@ import {
   Token,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
+import useWalletOnePointOh from '@hooks/useWalletOnePointOh'
 
 const WithdrawForm = ({
   index,
@@ -43,7 +44,7 @@ const WithdrawForm = ({
   governance: ProgramAccount<Governance> | null
 }) => {
   const connection = useWalletStore((s) => s.connection)
-  const wallet = useWalletStore((s) => s.current)
+  const wallet = useWalletOnePointOh()
   const { realmInfo } = useRealm()
   const [stratagies, setStratagies] = useState<any>([])
 
@@ -80,7 +81,6 @@ const WithdrawForm = ({
     setFormErrors(validationErrors)
     return isValid
   }
-  console.log(form.governedAccount)
 
   async function getInstruction(): Promise<UiInstruction> {
     const isValid = await validateInstruction()
@@ -113,8 +113,6 @@ const WithdrawForm = ({
         el.handledMint ===
         form.governedAccount?.extensions.mint?.publicKey.toString()
     )
-
-    console.log(matchedStratagie)
 
     const [rewardPool] = PublicKey.findProgramAddressSync(
       [
@@ -213,7 +211,7 @@ const WithdrawForm = ({
   return (
     <>
       <GovernedAccountSelect
-        label="Governance"
+        label="Wallet"
         governedAccounts={assetAccounts}
         onChange={(value) => {
           handleSetForm({ value, propertyName: 'governedAccount' })

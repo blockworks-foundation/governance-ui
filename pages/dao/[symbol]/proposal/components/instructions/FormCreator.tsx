@@ -20,9 +20,11 @@ export enum InstructionInputType {
 
 export interface InstructionInput {
   label: string
+  subtitle?: string
   initialValue: any
   name: string
   type: InstructionInputType
+  assetType?: 'mint' | 'token' | 'wallet'
   inputType?: string
   placeholder?: string
   min?: number
@@ -121,12 +123,15 @@ const InstructionInput = ({
             error={formErrors[input.name]}
             shouldBeGoverned={input.shouldBeGoverned}
             governance={input.governance}
+            type={input.assetType}
           />
         )
       case InstructionInputType.SELECT:
         return (
           <Select
             label={input.label}
+            subtitle={input.subtitle}
+            // Note that this is different from native selects, which simply use the value as the value, not the name-value pair.
             value={form[input.name]?.name}
             placeholder="Please select..."
             onChange={(value) => {
@@ -173,14 +178,28 @@ const InstructionInput = ({
         return (
           <Input
             min={input.min}
+            subtitle={input.subtitle}
             label={input.label}
             value={form[input.name]}
             type={input.inputType!}
             onChange={(event) => {
-              handleSetForm({
-                value: event.target.value,
-                propertyName: input.name,
-              })
+              if (input.inputType === 'number') {
+                const isNumber =
+                  event.target.value !== '' &&
+                  !isNaN(Number(event.target.value))
+
+                handleSetForm({
+                  value: isNumber
+                    ? Number(event.target.value)
+                    : event.target.value,
+                  propertyName: input.name,
+                })
+              } else {
+                handleSetForm({
+                  value: event.target.value,
+                  propertyName: input.name,
+                })
+              }
             }}
             step={input.step}
             error={formErrors[input.name]}
@@ -189,7 +208,7 @@ const InstructionInput = ({
                 ? input.onBlur
                 : input.validateMinMax
                 ? validateAmountOnBlur
-                : null
+                : undefined
             }
           />
         )
@@ -197,6 +216,7 @@ const InstructionInput = ({
       case InstructionInputType.TEXTAREA:
         return (
           <Textarea
+            subtitle={input.subtitle}
             label={input.label}
             placeholder={input.placeholder}
             wrapperClassName="mb-5"
@@ -214,6 +234,9 @@ const InstructionInput = ({
         return (
           <div className="text-sm mb-3">
             <div className="mb-2">{input.label}</div>
+            {input.subtitle && (
+              <p className="text-fgd-3 mb-1 -mt-2">{input.subtitle}</p>
+            )}
             <div className="flex flex-row text-xs items-center">
               <Switch
                 checked={form[input.name]}
@@ -293,7 +316,7 @@ const InstructionInput = ({
                           ? input.onBlur
                           : input.validateMinMax
                           ? validateAmountOnBlur
-                          : null
+                          : undefined
                       }
                     />
                   ) : (

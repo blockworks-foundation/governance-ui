@@ -7,9 +7,11 @@ import {
   Wallet as BaseWallet,
 } from '@solana/wallet-adapter-react';
 import type { PublicKey } from '@solana/web3.js';
+import {
+  detectEmbeddedInSquadsIframe,
+  SquadsEmbeddedWalletAdapter,
+} from '@sqds/iframe-adapter';
 import React, { createContext, useEffect, useMemo, useState } from 'react';
-
-import { WALLET_PROVIDERS } from 'utils/wallet-adapters';
 
 import { RealmCircle } from '@hub/components/branding/RealmCircle';
 import { SolanaLogo } from '@hub/components/branding/SolanaLogo';
@@ -17,11 +19,13 @@ import * as Dialog from '@hub/components/controls/Dialog';
 import { useCluster } from '@hub/hooks/useCluster';
 import { useToast, ToastType } from '@hub/hooks/useToast';
 import cx from '@hub/lib/cx';
+import { WALLET_PROVIDERS } from '@utils/wallet-adapters';
 
 interface Wallet {
   publicKey: PublicKey;
   signMessage: NonNullable<WalletContextState['signMessage']>;
   signTransaction: NonNullable<WalletContextState['signTransaction']>;
+  signAllTransactions: NonNullable<WalletContextState['signAllTransactions']>;
   wallet: BaseWallet;
 }
 
@@ -47,7 +51,14 @@ interface Props {
 }
 
 function WalletSelectorInner(props: Props) {
-  const { wallets, signMessage, signTransaction, select, wallet } = useWallet();
+  const {
+    wallets,
+    signMessage,
+    signTransaction,
+    signAllTransactions,
+    select,
+    wallet,
+  } = useWallet();
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [publicKey, setPublicKey] = useState<PublicKey | null>(null);
   const [shouldConnect, setShouldConnect] = useState(false);
@@ -55,9 +66,12 @@ function WalletSelectorInner(props: Props) {
 
   useEffect(() => {
     if (typeof localStorage !== 'undefined') {
-      const adapterName = JSON.parse(
-        localStorage.getItem('walletName') || '""',
-      );
+      let adapterName = '""';
+      try {
+        adapterName = JSON.parse(localStorage.getItem('walletName') || '""');
+      } catch (e) {
+        console.log(e);
+      }
 
       const adapter = wallets.find(
         (wallet) => wallet.adapter.name === adapterName,
@@ -100,6 +114,11 @@ function WalletSelectorInner(props: Props) {
         signMessage,
         signTransaction,
         wallet,
+        signAllTransactions:
+          signAllTransactions ||
+          (() => {
+            throw new Error('signAllTransactions not available');
+          }),
       });
     }
   }, [signMessage, signTransaction, publicKey, wallet]);
@@ -107,6 +126,7 @@ function WalletSelectorInner(props: Props) {
   const adapters = wallets.filter(
     (adapter) =>
       adapter.readyState === WalletReadyState.Installed ||
+      adapter.readyState === WalletReadyState.NotDetected ||
       adapter.readyState === WalletReadyState.Loadable,
   );
 
@@ -131,7 +151,7 @@ function WalletSelectorInner(props: Props) {
       >
         <Dialog.Portal>
           <Dialog.Overlay>
-            <Dialog.Content className={cx('max-h-[410px]', 'w-[375px]')}>
+            <Dialog.Content className="w-[375px]">
               <Dialog.Close />
               <div
                 className={cx(
@@ -203,7 +223,10 @@ export function WalletSelector(props: Props) {
   const [cluster] = useCluster();
 
   const supportedWallets = useMemo(
-    () => WALLET_PROVIDERS.map((provider) => provider.adapter),
+    () =>
+      detectEmbeddedInSquadsIframe()
+        ? [new SquadsEmbeddedWalletAdapter()]
+        : WALLET_PROVIDERS.map((provider) => provider.adapter),
     [],
   );
 

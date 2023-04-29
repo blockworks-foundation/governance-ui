@@ -23,6 +23,8 @@ import {
   SignatoryRecord,
   TokenOwnerRecord,
   VoteRecord,
+  VoteThreshold,
+  VoteThresholdType,
 } from '@solana/spl-governance'
 import { ProgramAccount } from '@solana/spl-governance'
 import { getGovernanceChatMessages } from '@solana/spl-governance'
@@ -41,14 +43,13 @@ import {
 } from '@models/api'
 import { accountsToPubkeyMap } from '@tools/sdk/accounts'
 import { HIDDEN_PROPOSALS } from '@components/instructions/tools'
-import { sleep } from '@blockworks-foundation/mango-client'
 import { getRealmConfigAccountOrDefault } from '@tools/governance/configs'
 import { getProposals } from '@utils/GovernanceTools'
 
 interface WalletStore extends State {
-  connected: boolean
   connection: ConnectionContext
   current: SignerWalletAdapter | undefined
+  mockWallet: SignerWalletAdapter | undefined
 
   ownVoteRecordsByProposal: { [proposal: string]: ProgramAccount<VoteRecord> }
   realms: { [realm: string]: ProgramAccount<Realm> }
@@ -83,7 +84,7 @@ interface WalletStore extends State {
     tokenRole?: GoverningTokenRole
     proposalOwner: ProgramAccount<TokenOwnerRecord> | undefined
   }
-  providerUrl: string | undefined
+  providerName: string | undefined
   tokenAccounts: TokenProgramAccount<TokenAccount>[]
   set: (x: any) => void
   actions: any
@@ -108,9 +109,10 @@ const INITIAL_REALM_STATE = {
   councilTokenOwnerRecords: {},
   loading: true,
   mints: {},
+  // @askfish: this should probably just be undefined, and leave it up to components how to handle things while loading
   programVersion: 1,
   config: undefined,
-}
+} as const
 
 const INITIAL_PROPOSAL_STATE = {
   proposal: undefined,
@@ -124,17 +126,17 @@ const INITIAL_PROPOSAL_STATE = {
   proposalMint: undefined,
   loading: true,
   proposalOwner: undefined,
-}
+} as const
 
 const useWalletStore = create<WalletStore>((set, get) => ({
-  connected: false,
   connection: getConnectionContext('mainnet'),
   current: undefined,
+  mockWallet: undefined,
   realms: {},
   ownVoteRecordsByProposal: {},
   selectedRealm: INITIAL_REALM_STATE,
   selectedProposal: INITIAL_PROPOSAL_STATE,
-  providerUrl: undefined,
+  providerName: undefined,
   tokenAccounts: [],
   switchboardProgram: undefined,
   selectedCouncilDelegate: undefined,
@@ -183,8 +185,9 @@ const useWalletStore = create<WalletStore>((set, get) => ({
     },
     async fetchWalletTokenAccounts() {
       const connection = get().connection.current
-      const connected = get().connected
-      const wallet = get().current
+      const wallet = get().mockWallet ?? get().current
+      const connected = !!wallet?.connected
+
       const walletOwner = wallet?.publicKey
       const set = get().set
 
@@ -205,7 +208,8 @@ const useWalletStore = create<WalletStore>((set, get) => ({
     },
     async fetchDelegateVoteRecords() {
       const connection = get().connection.current
-      const connected = get().connected
+      const wallet = get().mockWallet ?? get().current
+      const connected = !!wallet?.connected
       const programId = get().selectedRealm.programId
       const realmId = get().selectedRealm.realm?.pubkey
       const selectedCouncilDelegate = get().selectedCouncilDelegate
@@ -251,11 +255,11 @@ const useWalletStore = create<WalletStore>((set, get) => ({
 
     async fetchOwnVoteRecords() {
       const connection = get().connection.current
-      const connected = get().connected
       const programId = get().selectedRealm.programId
       const realmId = get().selectedRealm.realm?.pubkey
       const realmMintPk = get().selectedRealm.realm?.account.communityMint
-      const wallet = get().current
+      const wallet = get().mockWallet ?? get().current
+      const connected = !!wallet?.connected
       const walletOwner = wallet?.publicKey
       const set = get().set
 
@@ -297,12 +301,14 @@ const useWalletStore = create<WalletStore>((set, get) => ({
         s.selectedCouncilDelegate = councilDelegate
       })
     },
+
     selectCommunityDelegate(communityDelegate) {
       const set = get().set
       set((s) => {
         s.selectedCommunityDelegate = communityDelegate
       })
     },
+
     async fetchAllRealms(programId: PublicKey) {
       const connection = get().connection.current
       const set = get().set
@@ -369,8 +375,28 @@ const useWalletStore = create<WalletStore>((set, get) => ({
         getRealmConfigAccountOrDefault(connection, programId, realmId),
       ])
       console.log(governances)
-      const governancesMap = accountsToPubkeyMap(governances)
+      //during the upgrade from v2 to v3 some values are undefined
+      //we need to ensure the defaults that
+      //match the program:
+      //10 for depositExemptProposalCount and 0 for votingCoolOffTime
+      const governancesToSetDefaultValues = governances
+        .filter(
+          (x) =>
+            x.account.config.councilVoteThreshold.value === 0 &&
+            x.account.config.councilVoteThreshold.type ===
+              VoteThresholdType.YesVotePercentage
+        )
+        .map((x) => x.pubkey)
 
+      const governancesWithDefaultValues = governances.map((x) => {
+        if (governancesToSetDefaultValues.find((pk) => pk.equals(x.pubkey))) {
+          return getGovernanceWithDefaultValues(x)
+        } else {
+          return x
+        }
+      })
+
+      const governancesMap = accountsToPubkeyMap(governancesWithDefaultValues)
       set((s) => {
         s.selectedRealm.config = config
         s.selectedRealm.realm = realm
@@ -403,21 +429,12 @@ const useWalletStore = create<WalletStore>((set, get) => ({
 
     async refetchProposals() {
       console.log('REFETCH PROPOSALS')
-      await sleep(200)
       const set = get().set
-      const connection = get().connection.current
       const connectionContext = get().connection
-      const realmId = get().selectedRealm.realm?.pubkey
       const programId = get().selectedRealm.programId
-      const governances = await getGovernanceAccounts(
-        connection,
-        programId!,
-        Governance,
-        [pubkeyFilter(1, realmId)!]
-      )
-      console.log(governances)
+      const governances = get().selectedRealm.governances
       const proposalsByGovernance = await getProposals(
-        governances.map((x) => x.pubkey),
+        Object.keys(governances).map((x) => new PublicKey(x)),
         connectionContext,
         programId!
       )
@@ -520,10 +537,17 @@ const useWalletStore = create<WalletStore>((set, get) => ({
         ? GoverningTokenRole.Community
         : GoverningTokenRole.Council
 
+      const isGovernanceInNeedForDefaultValues =
+        governance.account.config.councilVoteThreshold.value === 0 &&
+        governance.account.config.councilVoteThreshold.type ===
+          VoteThresholdType.YesVotePercentage
+      const governanceWithDefaultValues = isGovernanceInNeedForDefaultValues
+        ? getGovernanceWithDefaultValues(governance)
+        : governance
       set((s) => {
         s.selectedProposal.proposal = proposal
         s.selectedProposal.descriptionLink = proposal.account.descriptionLink
-        s.selectedProposal.governance = governance
+        s.selectedProposal.governance = governanceWithDefaultValues
         s.selectedProposal.realm = realm
         s.selectedProposal.instructions = accountsToPubkeyMap(instructions)
         s.selectedProposal.voteRecordsByVoter = voteRecordsByVoter
@@ -568,5 +592,28 @@ const useWalletStore = create<WalletStore>((set, get) => ({
     },
   },
 }))
+
+const getGovernanceWithDefaultValues = (
+  governance: ProgramAccount<Governance>
+) => {
+  return {
+    ...governance,
+    account: {
+      ...governance.account,
+      config: {
+        ...governance.account.config,
+        votingCoolOffTime: 0,
+        depositExemptProposalCount: 10,
+        councilVoteThreshold: governance.account.config.communityVoteThreshold,
+        councilVetoVoteThreshold:
+          governance.account.config.communityVoteThreshold,
+        councilVoteTipping: governance.account.config.communityVoteTipping,
+        communityVetoVoteThreshold: new VoteThreshold({
+          type: VoteThresholdType.Disabled,
+        }),
+      },
+    },
+  }
+}
 
 export default useWalletStore

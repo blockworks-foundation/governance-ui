@@ -32,6 +32,12 @@ import { notify } from '@utils/notifications'
 import { sendSignedTransaction } from '@utils/send'
 import { compareProposals, filterProposals } from '@utils/proposals'
 import { REALM_ID as PYTH_REALM_ID } from 'pyth-staking-api'
+import ProposalSorting, {
+  InitialSorting,
+  PROPOSAL_SORTING_LOCAL_STORAGE_KEY,
+  Sorting,
+} from '@components/ProposalSorting'
+import useWalletOnePointOh from '@hooks/useWalletOnePointOh'
 
 const AccountsCompactWrapper = dynamic(
   () => import('@components/TreasuryAccount/AccountsCompactWrapper')
@@ -53,6 +59,8 @@ const REALM = () => {
   const {
     realm,
     realmInfo,
+    mint,
+    councilMint,
     proposals,
     governances,
     tokenRecords,
@@ -60,10 +68,10 @@ const REALM = () => {
     ownTokenRecord,
     councilTokenOwnerRecords,
     ownCouncilTokenRecord,
-    isNftMode,
   } = useRealm()
   const proposalsPerPage = 20
   const [filters, setFilters] = useState<Filters>(InitialFilters)
+  const [sorting, setSorting] = useState<Sorting>(InitialSorting)
   const [displayedProposals, setDisplayedProposals] = useState(
     Object.entries(proposals)
   )
@@ -81,12 +89,36 @@ const REALM = () => {
   const ownVoteRecordsByProposal = useWalletStore(
     (s) => s.ownVoteRecordsByProposal
   )
+
+  const councilDelegateVoteRecordsByProposal = useWalletStore(
+    (s) => s.councilDelegateVoteRecordsByProposal
+  )
+
+  const communityDelegateVoteRecordsByProposal = useWalletStore(
+    (s) => s.communityDelegateVoteRecordsByProposal
+  )
+  const selectedCouncilDelegate = useWalletStore(
+    (s) => s.selectedCouncilDelegate
+  )
+  const selectedCommunityDelegate = useWalletStore(
+    (s) => s.selectedCommunityDelegate
+  )
+
+  const getCurrentVoteRecKeyVal = () => {
+    if (selectedCommunityDelegate) {
+      return communityDelegateVoteRecordsByProposal
+    }
+    if (selectedCouncilDelegate) {
+      return councilDelegateVoteRecordsByProposal
+    }
+    return ownVoteRecordsByProposal
+  }
+
   const refetchProposals = useWalletStore((s) => s.actions.refetchProposals)
   const client = useVotePluginsClientStore(
     (s) => s.state.currentRealmVotingClient
   )
-  const wallet = useWalletStore((s) => s.current)
-  const connected = useWalletStore((s) => s.connected)
+  const wallet = useWalletOnePointOh()
   const connection = useWalletStore((s) => s.connection.current)
 
   const allProposals = Object.entries(proposals).sort((a, b) =>
@@ -99,7 +131,15 @@ const REALM = () => {
   }, [JSON.stringify(filteredProposals)])
 
   useEffect(() => {
-    let proposals = filterProposals(allProposals, filters)
+    let proposals = filterProposals(
+      allProposals,
+      filters,
+      sorting,
+      realm,
+      governances,
+      councilMint,
+      mint
+    )
 
     if (proposalSearch) {
       proposals = proposals.filter(([, v]) =>
@@ -110,10 +150,18 @@ const REALM = () => {
     }
     setFilteredProposals(proposals)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- TODO please fix, it can cause difficult bugs. You might wanna check out https://bobbyhadz.com/blog/react-hooks-exhaustive-deps for info. -@asktree
-  }, [filters, proposalSearch])
+  }, [filters, proposalSearch, sorting])
 
   useEffect(() => {
-    const proposals = filterProposals(allProposals, filters)
+    const proposals = filterProposals(
+      allProposals,
+      filters,
+      sorting,
+      realm,
+      governances,
+      councilMint,
+      mint
+    )
     setDisplayedProposals(proposals)
     setFilteredProposals(proposals)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- TODO please fix, it can cause difficult bugs. You might wanna check out https://bobbyhadz.com/blog/react-hooks-exhaustive-deps for info. -@asktree
@@ -132,6 +180,13 @@ const REALM = () => {
   const toggleMultiVoteMode = () => {
     setMultiVoteMode(!multiVoteMode)
   }
+  const handleSetSorting = (sorting: Sorting) => {
+    localStorage.setItem(
+      PROPOSAL_SORTING_LOCAL_STORAGE_KEY,
+      JSON.stringify(sorting)
+    )
+    setSorting(sorting)
+  }
 
   const votingProposals = useMemo(
     () =>
@@ -139,7 +194,7 @@ const REALM = () => {
         const governance = governances[v.account.governance.toBase58()]?.account
         return (
           v.account.state === ProposalState.Voting &&
-          !ownVoteRecordsByProposal[k] &&
+          !getCurrentVoteRecKeyVal()[k] &&
           !v.account.hasVoteTimeEnded(governance)
         )
       }),
@@ -152,11 +207,27 @@ const REALM = () => {
     if (multiVoteMode) {
       setFilteredProposals(votingProposals)
     } else {
-      const proposals = filterProposals(allProposals, filters)
+      const proposals = filterProposals(
+        allProposals,
+        filters,
+        sorting,
+        realm,
+        governances,
+        councilMint,
+        mint
+      )
       setFilteredProposals(proposals)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- TODO please fix, it can cause difficult bugs. You might wanna check out https://bobbyhadz.com/blog/react-hooks-exhaustive-deps for info. -@asktree
   }, [multiVoteMode])
+
+  useEffect(() => {
+    const initialSort = localStorage.getItem(PROPOSAL_SORTING_LOCAL_STORAGE_KEY)
+    if (initialSort) {
+      const initialSortObj = JSON.parse(initialSort)
+      setSorting(initialSortObj)
+    }
+  }, [])
 
   const allVotingProposalsSelected =
     selectedProposals.length === votingProposals.length
@@ -205,8 +276,16 @@ const REALM = () => {
         const ownTokenRecord =
           selectedProposal.proposal.governingTokenMint.toBase58() ===
           realm.account.communityMint.toBase58()
-            ? tokenRecords[wallet.publicKey!.toBase58()]
-            : councilTokenOwnerRecords[wallet.publicKey!.toBase58()]
+            ? tokenRecords[
+                selectedCommunityDelegate
+                  ? selectedCommunityDelegate
+                  : wallet.publicKey!.toBase58()
+              ]
+            : councilTokenOwnerRecords[
+                selectedCouncilDelegate
+                  ? selectedCouncilDelegate
+                  : wallet.publicKey!.toBase58()
+              ]
 
         const instructions: TransactionInstruction[] = []
 
@@ -266,14 +345,6 @@ const REALM = () => {
     setIsMultiVoting(false)
   }
 
-  const showMultiVote = useMemo(
-    () =>
-      realm
-        ? realm.account.votingProposalCount > 1 && connected && !isNftMode
-        : false,
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- TODO please fix, it can cause difficult bugs. You might wanna check out https://bobbyhadz.com/blog/react-hooks-exhaustive-deps for info. -@asktree
-    [realm, connected]
-  )
   //Todo: move to own components with refactor to dao folder structure
   const isPyth = realmInfo?.realmId.toBase58() === PYTH_REALM_ID.toBase58()
 
@@ -380,37 +451,32 @@ const REALM = () => {
                           filters={filters}
                           onChange={setFilters}
                         />
+                        <ProposalSorting
+                          sorting={sorting}
+                          disabled={multiVoteMode}
+                          onChange={handleSetSorting}
+                        ></ProposalSorting>
                       </div>
                       <div
-                        className={`flex lg:flex-row items-center justify-between lg:space-x-3 w-full ${
-                          showMultiVote ? 'flex-col-reverse' : 'flex-row'
-                        }`}
+                        className={`flex lg:flex-row items-center justify-between lg:space-x-3 w-full flex-col-reverse`}
                       >
-                        <h4 className="font-normal mb-0 text-fgd-2 whitespace-nowrap">{`${
-                          filteredProposals.length
-                        } Proposal${
-                          filteredProposals.length === 1 ? '' : 's'
-                        }`}</h4>
-                        <div
-                          className={`flex items-center lg:justify-end lg:pb-0 lg:space-x-3 w-full ${
-                            showMultiVote
-                              ? 'justify-between pb-3'
-                              : 'justify-end'
+                        <h4 className="font-normal mb-0 text-fgd-2 whitespace-nowrap">
+                          {`${filteredProposals.length} Proposal${
+                            filteredProposals.length === 1 ? '' : 's'
                           }`}
+                        </h4>
+                        <div
+                          className={`flex items-center lg:justify-end lg:pb-0 lg:space-x-3 w-full justify-between pb-3`}
                         >
-                          {showMultiVote ? (
-                            <div className="flex items-center">
-                              <p className="mb-0 mr-1 text-fgd-3">
-                                Multi-vote Mode
-                              </p>
-                              <Switch
-                                checked={multiVoteMode}
-                                onChange={() => {
-                                  toggleMultiVoteMode()
-                                }}
-                              />
-                            </div>
-                          ) : null}
+                          <div className="flex items-center">
+                            <p className="mb-0 mr-1 text-fgd-3">Batch voting</p>
+                            <Switch
+                              checked={multiVoteMode}
+                              onChange={() => {
+                                toggleMultiVoteMode()
+                              }}
+                            />
+                          </div>
                           <NewProposalBtn />
                         </div>
                       </div>
@@ -456,7 +522,7 @@ const REALM = () => {
             </div>
             <div className="col-span-12 md:col-span-5 lg:col-span-4 space-y-4">
               <TokenBalanceCardWrapper />
-              {!isPyth && <NFTSCompactWrapper />}
+              {!isPyth && !process?.env?.DISABLE_NFTS && <NFTSCompactWrapper />}
               <AccountsCompactWrapper />
               <AssetsCompactWrapper />
             </div>

@@ -18,6 +18,8 @@ import useWalletStore from 'stores/useWalletStore'
 import { Filters } from '@components/ProposalFilter'
 import { TokenOwnerRecordAsset } from '@models/treasury/Asset'
 import { arrayToRecord } from '@tools/core/script'
+import { InitialSorting } from '@components/ProposalSorting'
+import useRealm from './useRealm'
 
 const VotingFilter: Filters = {
   Cancelled: false,
@@ -28,6 +30,8 @@ const VotingFilter: Filters = {
   ExecutingWithErrors: false,
   SigningOff: false,
   Voting: true,
+  Vetoed: false,
+  withoutQuorum: false,
 }
 
 export default function useRealmProposals(
@@ -37,6 +41,7 @@ export default function useRealmProposals(
 ) {
   const router = useRouter()
   const { cluster } = router.query
+  const { realm, mint, councilMint } = useRealm()
   //Small hack to prevent race conditions with cluster change until we remove connection from store and move it to global dep.
   const routeHasClusterInPath = router.asPath.includes('cluster')
 
@@ -127,7 +132,12 @@ export default function useRealmProposals(
 
         const votingProposals = filterProposals(
           Object.entries(proposals),
-          VotingFilter
+          VotingFilter,
+          InitialSorting,
+          realm,
+          accountsToPubkeyMap(governances),
+          mint,
+          councilMint
         )
 
         if (!active) return

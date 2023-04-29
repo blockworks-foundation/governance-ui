@@ -1,4 +1,3 @@
-import { formatDistanceToNowStrict } from 'date-fns';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 
@@ -59,9 +58,6 @@ export function Post(props: Props) {
           {props.post.realm.publicKey.equals(ECOSYSTEM_PAGE)
             ? 'Solana Ecosystem'
             : props.post.realm.name}
-        </div>
-        <div className="text-xs text-neutral-500 ml-3">
-          {formatDistanceToNowStrict(props.post.created)} ago
         </div>
       </div>
     </button>
